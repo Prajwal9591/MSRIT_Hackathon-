@@ -130,5 +130,17 @@ export const api = {
     });
     if (!response.ok) throw new Error('Failed to fetch AI explanation');
     return await response.json();
+  },
+
+  // Parse Repository Metadata from ZIP, Folder, or GitHub URL
+  parseRepositoryMetadata: async (payload = {}) => {
+    const isFormData = payload instanceof FormData;
+    const response = await fetch(`${API_BASE_URL}/scanner/parse-metadata`, {
+      method: 'POST',
+      headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+      body: isFormData ? payload : JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error('Failed to parse repository metadata');
+    return await response.json();
   }
 };
