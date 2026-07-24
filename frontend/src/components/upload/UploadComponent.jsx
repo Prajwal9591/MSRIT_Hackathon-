@@ -413,6 +413,7 @@ export const UploadComponent = () => {
 
           <Button
             type="submit"
+            onClick={() => handleFetchMetadata('github')}
             disabled={isLoading}
             variant="primary"
             className="w-full py-3"
