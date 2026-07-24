@@ -31,11 +31,7 @@ export const repoScannerService = {
         repositoryName: name,
         branch: 'main',
         status: 'Validated',
-        totalFiles: scannedData.totalFiles,
-        totalFolders: scannedData.totalFolders,
-        totalSize: scannedData.totalSize,
-        ignoredFolders: scannedData.ignoredFolders,
-        languageDistribution: scannedData.languageDistribution
+        ...scannedData
       };
     } finally {
       setTimeout(() => {
@@ -76,11 +72,7 @@ export const repoScannerService = {
       repositoryName: name,
       branch: 'main',
       status: 'Validated',
-      totalFiles: scannedData.totalFiles,
-      totalFolders: scannedData.totalFolders,
-      totalSize: scannedData.totalSize,
-      ignoredFolders: scannedData.ignoredFolders,
-      languageDistribution: scannedData.languageDistribution
+      ...scannedData
     };
   },
 
@@ -110,11 +102,7 @@ export const repoScannerService = {
         repositoryName: name,
         branch,
         status: 'Validated',
-        totalFiles: scannedData.totalFiles,
-        totalFolders: scannedData.totalFolders,
-        totalSize: scannedData.totalSize,
-        ignoredFolders: scannedData.ignoredFolders,
-        languageDistribution: scannedData.languageDistribution
+        ...scannedData
       };
     } catch (cloneError) {
       logger.warn(`simple-git clone failed for ${githubUrl}: ${cloneError.message}. Using dynamic repository metadata parser...`);
@@ -127,11 +115,7 @@ export const repoScannerService = {
         repositoryName: name,
         branch,
         status: 'Validated',
-        totalFiles: scannedData.totalFiles,
-        totalFolders: scannedData.totalFolders,
-        totalSize: scannedData.totalSize,
-        ignoredFolders: scannedData.ignoredFolders,
-        languageDistribution: scannedData.languageDistribution
+        ...scannedData
       };
     } finally {
       setTimeout(() => {

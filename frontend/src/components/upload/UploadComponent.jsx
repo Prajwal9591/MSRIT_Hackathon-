@@ -27,7 +27,15 @@ import { Button } from '../common/Button';
 const API_BASE_URL = '/api/v1';
 
 export const UploadComponent = () => {
-  const { handleAddRepository, showToast, backendConnected } = useApp();
+  const {
+    handleAddRepository,
+    showToast,
+    backendConnected,
+    setRepositoryMetadata,
+    setIsMetadataLoading,
+    setLoadingStep,
+    setMetadataError
+  } = useApp();
 
   const [activeMode, setActiveMode] = useState('zip'); // 'zip' | 'folder' | 'github'
   const [dragOver, setDragOver] = useState(false);
@@ -48,8 +56,18 @@ export const UploadComponent = () => {
    */
   const handleFetchMetadata = async (mode = activeMode, extraPayload = {}) => {
     setIsLoading(true);
+    setIsMetadataLoading(true);
+    if (setLoadingStep) setLoadingStep(0);
     setErrorMsg(null);
+    if (setMetadataError) setMetadataError(null);
     setMetadataResult(null);
+
+    // Step timer for scanning animation steps
+    const stepInterval = setInterval(() => {
+      if (setLoadingStep) {
+        setLoadingStep((prev) => (prev < 3 ? prev + 1 : prev));
+      }
+    }, 450);
 
     try {
       let response;
@@ -126,6 +144,7 @@ export const UploadComponent = () => {
       }
 
       setMetadataResult(data);
+      if (setRepositoryMetadata) setRepositoryMetadata(data);
     } catch (err) {
       console.error('Metadata API error:', err);
 
@@ -139,9 +158,12 @@ export const UploadComponent = () => {
       }
 
       setErrorMsg(message);
+      if (setMetadataError) setMetadataError(message);
       showToast(message, 'error');
     } finally {
+      clearInterval(stepInterval);
       setIsLoading(false);
+      setIsMetadataLoading(false);
     }
   };
 

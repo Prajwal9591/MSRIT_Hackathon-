@@ -195,6 +195,12 @@ export const AppProvider = ({ children }) => {
   const [backendConnected, setBackendConnected] = useState(false);
   const [backendHealthData, setBackendHealthData] = useState(null);
 
+  // Scanned Repository Intelligence Metadata State
+  const [repositoryMetadata, setRepositoryMetadata] = useState(null);
+  const [isMetadataLoading, setIsMetadataLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [metadataError, setMetadataError] = useState(null);
+
   // Analysis Data State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
@@ -359,6 +365,14 @@ export const AppProvider = ({ children }) => {
         setSelectedFile,
         backendConnected,
         backendHealthData,
+        repositoryMetadata,
+        setRepositoryMetadata,
+        isMetadataLoading,
+        setIsMetadataLoading,
+        loadingStep,
+        setLoadingStep,
+        metadataError,
+        setMetadataError,
         isAnalyzing,
         analysisProgress,
         riskCards,
