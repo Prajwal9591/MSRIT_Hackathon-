@@ -1,0 +1,184 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AegisBlastAnalysisPayload",
+  "type": "object",
+  "version": "1.0.0",
+  "description": "Versioned JSON schema definition exchanged between Express Backend and React Frontend",
+  "required": [
+    "schemaVersion",
+    "repositoryMetadata",
+    "changedItem",
+    "riskScore",
+    "confidence",
+    "affectedFiles",
+    "affectedApis",
+    "affectedServices",
+    "affectedTeams",
+    "affectedTests",
+    "blastRadius",
+    "recommendations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "example": "1.0.0"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "repositoryMetadata": {
+      "type": "object",
+      "required": ["repoId", "name", "owner", "defaultBranch", "language", "fileCount", "dependenciesCount"],
+      "properties": {
+        "repoId": { "type": "string", "example": "repo-1" },
+        "name": { "type": "string", "example": "payment-gateway-service" },
+        "owner": { "type": "string", "example": "fintech-org" },
+        "defaultBranch": { "type": "string", "example": "main" },
+        "language": { "type": "string", "example": "TypeScript / Node.js" },
+        "fileCount": { "type": "integer", "example": 312 },
+        "dependenciesCount": { "type": "integer", "example": 84 },
+        "latestCommit": {
+          "type": "object",
+          "properties": {
+            "hash": { "type": "string" },
+            "author": { "type": "string" },
+            "message": { "type": "string" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      }
+    },
+    "changedItem": {
+      "type": "object",
+      "required": ["filePath", "functionName", "commitHash", "additions", "deletions"],
+      "properties": {
+        "filePath": { "type": "string", "example": "src/services/StripeWebhookHandler.ts" },
+        "functionName": { "type": "string", "example": "handlePaymentIntentSucceeded" },
+        "commitHash": { "type": "string", "example": "8f92a1b" },
+        "author": { "type": "string", "example": "Alex Vance" },
+        "additions": { "type": "integer", "example": 84 },
+        "deletions": { "type": "integer", "example": 32 },
+        "diffSnippet": { "type": "string" }
+      }
+    },
+    "riskScore": {
+      "type": "object",
+      "required": ["score", "level", "riskWeights"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100, "example": 88 },
+        "level": { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"], "example": "CRITICAL" },
+        "riskWeights": {
+          "type": "object",
+          "properties": {
+            "securityGuardWeight": { "type": "number", "example": 35 },
+            "databaseLockWeight": { "type": "number", "example": 25 },
+            "apiExposureWeight": { "type": "number", "example": 20 },
+            "blastRadiusWeight": { "type": "number", "example": 20 }
+          }
+        }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "required": ["score", "aiModel", "precisionLevel"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100, "example": 96 },
+        "aiModel": { "type": "string", "example": "Google Gemini 1.5 Flash" },
+        "precisionLevel": { "type": "string", "example": "High Precision AST Verification" }
+      }
+    },
+    "affectedFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "layer", "risk", "status"],
+        "properties": {
+          "path": { "type": "string" },
+          "layer": { "type": "string" },
+          "risk": { "type": "string" },
+          "additions": { "type": "integer" },
+          "deletions": { "type": "integer" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "affectedApis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["endpoint", "protocol", "authStatus", "riskImpact"],
+        "properties": {
+          "endpoint": { "type": "string" },
+          "protocol": { "type": "string" },
+          "authStatus": { "type": "string" },
+          "riskImpact": { "type": "string" }
+        }
+      }
+    },
+    "affectedServices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "region", "status", "risk"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "region": { "type": "string" },
+          "status": { "type": "string" },
+          "risk": { "type": "string" }
+        }
+      }
+    },
+    "affectedTeams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "lead", "membersCount", "role"],
+        "properties": {
+          "name": { "type": "string" },
+          "lead": { "type": "string" },
+          "membersCount": { "type": "integer" },
+          "role": { "type": "string" }
+        }
+      }
+    },
+    "affectedTests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["testSuite", "type", "framework", "priority"],
+        "properties": {
+          "testSuite": { "type": "string" },
+          "type": { "type": "string" },
+          "framework": { "type": "string" },
+          "priority": { "type": "string" }
+        }
+      }
+    },
+    "blastRadius": {
+      "type": "object",
+      "required": ["score", "scope", "maxDepth", "impactedNodesCount", "totalNodesCount"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100, "example": 92 },
+        "scope": { "type": "string", "example": "System-Wide (Multi-Microservice & DB)" },
+        "maxDepth": { "type": "integer", "example": 3 },
+        "impactedNodesCount": { "type": "integer", "example": 9 },
+        "totalNodesCount": { "type": "integer", "example": 9 }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "category", "description"],
+        "properties": {
+          "title": { "type": "string" },
+          "category": { "type": "string" },
+          "description": { "type": "string" },
+          "codeFix": { "type": "string" }
+        }
+      }
+    }
+  }
+}
