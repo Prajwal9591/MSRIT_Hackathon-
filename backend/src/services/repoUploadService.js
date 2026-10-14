@@ -98,58 +98,6 @@ export const repoUploadService = {
   },
 
   /**
-   * Synthesize realistic repository files based on repository name for fallback parsing
-   */
-  generateDynamicRepoFiles: (repoName = 'custom-repo') => {
-    const nameLower = repoName.toLowerCase();
-    
-    if (nameLower.includes('chat') || nameLower.includes('socket') || nameLower.includes('message')) {
-      return [
-        { path: 'backend/src/server.js', size: 2840 },
-        { path: 'backend/src/controllers/chatController.js', size: 4120 },
-        { path: 'backend/src/controllers/userController.js', size: 3200 },
-        { path: 'backend/src/routes/chatRoutes.js', size: 2150 },
-        { path: 'backend/src/routes/authRoutes.js', size: 1890 },
-        { path: 'backend/src/models/Message.js', size: 1650 },
-        { path: 'backend/src/models/User.js', size: 1420 },
-        { path: 'backend/src/services/socketService.js', size: 5600 },
-        { path: 'backend/src/middleware/authMiddleware.js', size: 2300 },
-        { path: 'frontend/src/App.jsx', size: 3400 },
-        { path: 'frontend/src/components/ChatRoom.jsx', size: 6100 },
-        { path: 'frontend/src/components/MessageList.jsx', size: 2800 },
-        { path: 'frontend/src/components/Sidebar.jsx', size: 2100 },
-        { path: 'package.json', size: 1250 },
-        { path: 'README.md', size: 3400 },
-        { path: 'Dockerfile', size: 680 }
-      ];
-    }
-
-    if (nameLower.includes('auth') || nameLower.includes('identity') || nameLower.includes('user')) {
-      return [
-        { path: 'src/server.go', size: 3500 },
-        { path: 'src/controllers/auth.go', size: 4800 },
-        { path: 'src/services/token.go', size: 3200 },
-        { path: 'src/middleware/jwt.go', size: 2400 },
-        { path: 'src/models/user.go', size: 1900 },
-        { path: 'go.mod', size: 600 },
-        { path: 'README.md', size: 2100 }
-      ];
-    }
-
-    // Default dynamic repository files
-    return [
-      { path: `src/index.js`, size: 2400 },
-      { path: `src/controllers/${repoName}Controller.js`, size: 4500 },
-      { path: `src/services/${repoName}Service.js`, size: 3800 },
-      { path: `src/routes/${repoName}Routes.js`, size: 2200 },
-      { path: `src/models/${repoName}Model.js`, size: 1900 },
-      { path: `src/middleware/guard.js`, size: 1800 },
-      { path: `package.json`, size: 1100 },
-      { path: `README.md`, size: 2500 }
-    ];
-  },
-
-  /**
    * Validate repository files & size bounds
    */
   validateUpload: ({ files, totalSizeKb, repoName }) => {
@@ -160,21 +108,21 @@ export const repoUploadService = {
       errors.push('Repository name cannot be empty.');
     }
 
-    if (!files || files.length === 0) {
-      errors.push('No valid code files detected in repository upload.');
+    if (totalSizeKb > 500 * 1024) {
+      errors.push(`Repository total size (${Math.round(totalSizeKb / 1024)}MB) exceeds maximum allowed threshold of 500MB.`);
     }
 
-    if (totalSizeKb > 500 * 1024) {
-      warnings.push('Repository size exceeds 500MB. AST generation may take longer.');
+    if (!files || files.length === 0) {
+      warnings.push('Repository is empty (0 source files detected).');
     }
 
     // Check if key manifest files exist
-    const filePaths = files.map((f) => f.path.toLowerCase());
+    const filePaths = (files || []).map((f) => String(f?.path || '').toLowerCase());
     const hasManifest = filePaths.some((p) =>
       p.endsWith('package.json') || p.endsWith('requirements.txt') || p.endsWith('go.mod') || p.endsWith('pom.xml') || p.endsWith('cargo.toml')
     );
 
-    if (!hasManifest) {
+    if (files && files.length > 0 && !hasManifest) {
       warnings.push('No standard package manifest (package.json, requirements.txt, go.mod) detected in root.');
     }
 
@@ -188,13 +136,13 @@ export const repoUploadService = {
   /**
    * Process and analyze raw file list (from ZIP, Local Folder, or GitHub clone)
    */
-  parseRepositoryStructure: (rawFileList, repoName = 'sample-repo', repoType = 'folder') => {
+  parseRepositoryStructure: (rawFileList = [], repoName = 'sample-repo', repoType = 'folder') => {
     const validFiles = [];
     const folderSet = new Set();
     const languageCounts = {};
     let totalSizeBytes = 0;
 
-    rawFileList.forEach((item) => {
+    (rawFileList || []).forEach((item) => {
       const relPath = item.path || item.name;
       if (!relPath || repoUploadService.shouldIgnorePath(relPath)) {
         return; // Ignore .git, node_modules, dist, build, venv
@@ -242,7 +190,7 @@ export const repoUploadService = {
       percentage: totalFiles > 0 ? Math.round((count / totalFiles) * 100) : 0
     })).sort((a, b) => b.count - a.count);
 
-    const primaryLanguage = languages.length > 0 ? languages[0].name : 'Unknown';
+    const primaryLanguage = languages.length > 0 ? languages[0].name : 'None detected';
 
     // Validation
     const validation = repoUploadService.validateUpload({
@@ -261,7 +209,8 @@ export const repoUploadService = {
         totalSizeKb,
         primaryLanguage,
         scannedAt: new Date().toISOString(),
-        ignoredPatterns: Array.from(IGNORED_DIRECTORIES)
+        ignoredPatterns: Array.from(IGNORED_DIRECTORIES),
+        isEmpty: totalFiles === 0
       },
       validation,
       languages,
@@ -291,11 +240,7 @@ export const repoUploadService = {
       }
     }
 
-    const filesToParse = extractedFiles.length > 0
-      ? extractedFiles
-      : repoUploadService.generateDynamicRepoFiles(extractedName);
-
-    return repoUploadService.parseRepositoryStructure(filesToParse, extractedName, 'ZIP Archive');
+    return repoUploadService.parseRepositoryStructure(extractedFiles, extractedName, 'ZIP Archive');
   },
 
   /**
@@ -303,61 +248,62 @@ export const repoUploadService = {
    */
   processFolderUpload: (folderFiles, folderName) => {
     const name = folderName || 'local-workspace-folder';
-    const filesToParse = folderFiles && folderFiles.length > 0
-      ? folderFiles
-      : repoUploadService.generateDynamicRepoFiles(name);
-    return repoUploadService.parseRepositoryStructure(filesToParse, name, 'Local Folder');
+    return repoUploadService.parseRepositoryStructure(folderFiles || [], name, 'Local Folder');
   },
 
   /**
    * Process GitHub Repository Clone via GitHub REST API
    */
-  processGithubUrl: async (githubUrl, branch = 'main') => {
+  processGithubUrl: async (githubUrl, branch = 'auto') => {
     const extractedName = githubUrl ? githubUrl.split('/').pop().replace('.git', '') : 'github-repo';
     let rawFileList = [];
+    let resolvedBranch = branch;
 
     // Parse owner & repo from GitHub URL
     const match = githubUrl ? githubUrl.match(/github\.com\/([^\/]+)\/([^\/\.]+)/i) : null;
     if (match) {
       const owner = match[1];
-      const repo = match[2];
-      try {
-        // Fetch git tree from GitHub REST API
-        const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, {
-          headers: {
-            'User-Agent': 'AegisBlast-App',
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
+      const repo = match[2].replace('.git', '');
+      const headers = {
+        'User-Agent': 'AegisBlast-App',
+        'Accept': 'application/vnd.github.v3+json'
+      };
 
-        if (treeRes.ok) {
-          const treeData = await treeRes.json();
-          if (treeData.tree && Array.isArray(treeData.tree)) {
-            rawFileList = treeData.tree
-              .filter((item) => item.type === 'blob')
-              .map((item) => ({
-                path: item.path,
-                size: item.size || 1024
-              }));
-          }
-        } else if (branch === 'main') {
-          // Retry with master branch if main returns 404
-          const masterRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/master?recursive=1`, {
-            headers: {
-              'User-Agent': 'AegisBlast-App',
-              'Accept': 'application/vnd.github.v3+json'
+      try {
+        // 1. Fetch Repository Info to get exact default branch
+        const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+        let detectedDefault = 'main';
+        if (repoRes.ok) {
+          const repoInfo = await repoRes.json();
+          detectedDefault = repoInfo.default_branch || 'main';
+        }
+
+        const candidateBranches = [];
+        if (branch && branch !== 'auto' && branch !== 'main' && branch !== 'master') candidateBranches.push(branch);
+        if (detectedDefault) candidateBranches.push(detectedDefault);
+        if (branch && branch !== 'auto') candidateBranches.push(branch);
+        candidateBranches.push('Production', 'production', 'main', 'master', 'develop', 'dev');
+
+        const uniqueCandidates = Array.from(new Set(candidateBranches.filter(Boolean)));
+
+        for (const candidate of uniqueCandidates) {
+          try {
+            const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(candidate)}?recursive=1`, { headers });
+            if (treeRes.ok) {
+              const treeData = await treeRes.json();
+              if (treeData.tree && Array.isArray(treeData.tree) && treeData.tree.length > 0) {
+                rawFileList = treeData.tree
+                  .filter((item) => item.type === 'blob')
+                  .map((item) => ({
+                    path: item.path,
+                    size: item.size || 1024
+                  }));
+                resolvedBranch = candidate;
+                break;
+              }
             }
-          });
-          if (masterRes.ok) {
-            const masterData = await masterRes.json();
-            if (masterData.tree && Array.isArray(masterData.tree)) {
-              rawFileList = masterData.tree
-                .filter((item) => item.type === 'blob')
-                .map((item) => ({
-                  path: item.path,
-                  size: item.size || 1024
-                }));
-            }
+          } catch (e) {
+            // try next candidate
           }
         }
       } catch (err) {
@@ -365,14 +311,13 @@ export const repoUploadService = {
       }
     }
 
-    // If GitHub API didn't return tree (offline / rate-limit / private repo), generate repo-specific files
-    if (rawFileList.length === 0) {
-      rawFileList = repoUploadService.generateDynamicRepoFiles(extractedName);
-    }
-
     const result = repoUploadService.parseRepositoryStructure(rawFileList, extractedName, 'GitHub Clone');
     result.metadata.githubUrl = githubUrl;
-    result.metadata.branch = branch;
+    result.metadata.gitUrl = githubUrl;
+    if (match) {
+      result.metadata.owner = match[1];
+    }
+    result.metadata.branch = resolvedBranch || 'main';
     return result;
   }
 };

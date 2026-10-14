@@ -1,36 +1,34 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Cpu,
   Layers,
   Database,
   ShieldCheck,
   CheckCircle2,
-  XCircle,
   AlertTriangle,
+  AlertCircle,
   FolderGit2,
-  Code2,
-  Terminal,
-  Activity,
-  Zap,
   Server,
-  FileCode2,
   TestTube2,
   Lock,
   GitBranch,
-  Clock,
-  User,
   Box,
-  Share2,
   Workflow,
-  Sparkles,
   ArrowRight,
   RefreshCw,
   Gauge,
-  Check
+  Check,
+  Globe,
+  HardDrive,
+  User,
+  Clock
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
+import { Tooltip } from '../common/Tooltip';
+import { TechnologyStackCard } from '../dashboard/TechnologyStackCard';
+import { RepositoryHealthSection } from '../analysis/RepositoryHealthSection';
 
 export const RepositoryIntelligence = ({
   metadata,
@@ -48,8 +46,11 @@ export const RepositoryIntelligence = ({
     'Building metadata & health index...'
   ];
 
+  // Resolve metadata purely from passed prop (null before user uploads or connects repository)
+  const effectiveMetadata = metadata || null;
+
   // Render Empty State
-  if (!metadata && !isLoading && !error) {
+  if (!effectiveMetadata && !isLoading && !error) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 15 }}
@@ -166,52 +167,53 @@ export const RepositoryIntelligence = ({
     );
   }
 
-  // Extract Metadata values cleanly with fallback defaults
+  const isEmptyRepo = effectiveMetadata.totalFiles === 0 || effectiveMetadata.isEmpty;
+  const isNonCodeRepo = Boolean(
+    effectiveMetadata.isNonCodeRepo ||
+    effectiveMetadata.hasSourceCode === false ||
+    (effectiveMetadata.totalFiles > 0 && effectiveMetadata.readinessChecklist?.readyForBlastAnalysis === false)
+  );
+
+  // Extract Metadata values cleanly with authentic calculations
   const overview = {
-    name: metadata.repositoryName || 'Uploaded Codebase',
-    branch: metadata.branch || metadata.defaultBranch || 'main',
-    visibility: metadata.repositoryVisibility || 'Public',
-    size: metadata.totalSize || 'N/A',
-    age: metadata.repositoryAge || 'Active (Updated recently)',
-    lastCommitDate: metadata.lastCommitDate || new Date().toISOString().split('T')[0],
-    lastCommitAuthor: metadata.lastCommitAuthor || 'Prajwal HY'
+    name: effectiveMetadata.repositoryName || 'Uploaded Codebase',
+    branch: effectiveMetadata.branch || effectiveMetadata.defaultBranch || 'main',
+    visibility: effectiveMetadata.repositoryVisibility || 'Public',
+    size: effectiveMetadata.totalSize || '0 KB',
+    age: effectiveMetadata.repositoryAge || 'Active (Updated recently)',
+    lastCommitDate: effectiveMetadata.lastCommitDate || new Date().toISOString().split('T')[0],
+    lastCommitAuthor: effectiveMetadata.lastCommitAuthor || 'DevSecOps Team'
   };
 
-  const techStack = metadata.techStack || {
-    frontendFramework: 'React',
-    backendFramework: 'Express',
-    packageManager: 'npm'
-  };
-
-  const infrastructure = metadata.infrastructureDetection || {
-    dockerfile: true,
-    dockerCompose: true,
-    githubActions: true,
+  const infrastructure = effectiveMetadata.infrastructureDetection || {
+    dockerfile: false,
+    dockerCompose: false,
+    githubActions: false,
     gitlabCi: false,
     jenkins: false,
     terraform: false,
     kubernetes: false,
     helmCharts: false,
-    nginx: true,
+    nginx: false,
     apache: false
   };
 
-  const database = metadata.databaseDetection || {
-    mongodb: true,
+  const database = effectiveMetadata.databaseDetection || {
+    mongodb: false,
     mysql: false,
-    postgresql: true,
+    postgresql: false,
     sqlite: false,
-    redis: true,
+    redis: false,
     supabase: false,
     firebase: false,
-    prisma: true,
+    prisma: false,
     drizzle: false,
     typeorm: false
   };
 
-  const authentication = metadata.authenticationDetection || {
-    jwt: true,
-    oauth: true,
+  const authentication = effectiveMetadata.authenticationDetection || {
+    jwt: false,
+    oauth: false,
     passportJs: false,
     firebaseAuth: false,
     supabaseAuth: false,
@@ -220,9 +222,9 @@ export const RepositoryIntelligence = ({
     auth0: false
   };
 
-  const testing = metadata.testingDetection || {
-    jest: true,
-    vitest: true,
+  const testing = effectiveMetadata.testingDetection || {
+    jest: false,
+    vitest: false,
     pytest: false,
     junit: false,
     mocha: false,
@@ -231,48 +233,42 @@ export const RepositoryIntelligence = ({
     selenium: false
   };
 
-  const apis = metadata.apiAnalysis || {
-    restApis: 14,
+  const apis = effectiveMetadata.apiAnalysis || {
+    restApis: 0,
     graphQlApis: 0,
-    webSocketEndpoints: 2,
+    webSocketEndpoints: 0,
     gRpcServices: 0
   };
 
-  const structure = metadata.projectStructure || {
-    modules: 6,
-    controllers: 8,
-    services: 12,
-    routes: 10,
-    components: 24,
-    hooks: 5,
-    utilities: 11,
-    configurations: 4
+  const structure = effectiveMetadata.projectStructure || {
+    modules: 0,
+    controllers: 0,
+    services: 0,
+    routes: 0,
+    components: 0,
+    hooks: 0,
+    utilities: 0,
+    configurations: 0
   };
 
-  const health = metadata.repositoryHealth || {
-    completeness: 92,
-    documentationScore: 85,
-    dependencyHealth: 90,
-    codeOrganization: 88,
-    repositoryHealthScore: 89,
-    healthStatus: 'Excellent'
+  const health = effectiveMetadata.repositoryHealth || {
+    completeness: 0,
+    documentationScore: 0,
+    dependencyHealth: 0,
+    codeOrganization: 0,
+    repositoryHealthScore: 0,
+    healthStatus: isEmptyRepo ? 'Empty Repository (0 files)' : 'N/A'
   };
 
-  const checklist = metadata.readinessChecklist || {
-    repositoryUploaded: true,
-    repositoryValidated: true,
+  const checklist = effectiveMetadata.readinessChecklist || {
+    repositoryUploaded: Boolean(effectiveMetadata.repositoryName),
+    repositoryValidated: !isEmptyRepo,
     metadataGenerated: true,
     languageDetectionCompleted: true,
-    dependencyGraphReady: true,
-    astParserReady: true,
-    readyForBlastAnalysis: true
+    dependencyGraphReady: !isEmptyRepo && !isNonCodeRepo,
+    astParserReady: !isEmptyRepo && !isNonCodeRepo,
+    readyForBlastAnalysis: !isEmptyRepo && !isNonCodeRepo
   };
-
-  const languages = metadata.languageDistribution || [
-    { language: 'JavaScript', percentage: 65, files: 42 },
-    { language: 'TypeScript', percentage: 25, files: 16 },
-    { language: 'JSON', percentage: 10, files: 8 }
-  ];
 
   return (
     <motion.div
@@ -298,151 +294,139 @@ export const RepositoryIntelligence = ({
         </div>
 
         {onLaunchScan && (
-          <Button onClick={onLaunchScan} variant="primary" icon={ArrowRight} className="py-2.5 px-5 text-xs shadow-lg shadow-cyan-500/20">
+          <Button
+            onClick={checklist.readyForBlastAnalysis ? onLaunchScan : undefined}
+            disabled={!checklist.readyForBlastAnalysis}
+            variant={checklist.readyForBlastAnalysis ? "primary" : "secondary"}
+            icon={ArrowRight}
+            className={`py-2.5 px-5 text-xs ${
+              checklist.readyForBlastAnalysis ? 'shadow-lg shadow-cyan-500/20' : 'opacity-50 cursor-not-allowed'
+            }`}
+            title={checklist.readyForBlastAnalysis ? "Launch Blast Radius Scan" : "Blast Radius Analysis requires source code files (JS/TS/Python/Go/Java/Rust)"}
+          >
             Launch Blast Radius Scan
           </Button>
         )}
       </div>
+
+      {/* Non-Code Repository Notice */}
+      {isNonCodeRepo && (
+        <div className="p-4 rounded-3xl bg-amber-950/20 border border-amber-500/30 flex items-start gap-3.5 text-amber-200 text-xs shadow-lg">
+          <AlertCircle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="font-bold text-amber-300">Non-Code Repository Detected</h4>
+            <p className="text-amber-200/90 leading-relaxed">
+              {effectiveMetadata.nonCodeReason ||
+                `This repository contains data/report assets (${effectiveMetadata.nonCodeType || 'Power BI / Excel'}) without application source code files (JS, TS, Python, Go, Java, Rust). Code-level AST call graphs, API endpoints, and Blast Radius Analysis are bypassed.`}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Grid Row 1: Overview & Tech Stack */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Card 1: Repository Overview */}
         <motion.div
           whileHover={{ y: -2 }}
-          className="p-6 rounded-3xl glass-card border border-slate-800 space-y-4 shadow-xl"
+          transition={{ duration: 0.2 }}
+          className="p-6 rounded-3xl glass-card border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between"
+          id="repository-overview-card"
         >
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              <FolderGit2 className="h-4 w-4 text-cyan-400" /> Repository Overview
+            <h4 className="text-sm sm:text-base font-bold text-slate-100 flex items-center gap-2.5">
+              <FolderGit2 className="h-4.5 w-4.5 text-cyan-400" /> Repository Overview
             </h4>
-            <Badge variant="info" className="text-[10px]">
-              {overview.visibility}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="info" className="text-[11px] px-2.5 py-0.5">
+                {overview.visibility}
+              </Badge>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 block">Repo Name</span>
-              <span className="font-bold text-slate-100 truncate block mt-0.5" title={overview.name}>
-                {overview.name}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-4">
+            {/* 1. Repository Name */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700/80 transition-all duration-200 flex flex-col justify-between space-y-1.5 group">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5 group-hover:text-slate-300 transition-colors">
+                <FolderGit2 className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                Repository Name
               </span>
+              <Tooltip title="Repository Name" content={`Target repository name: ${overview.name}. Registered for blast radius graph generation.`} position="top">
+                <span className="font-bold text-slate-100 text-xs sm:text-sm truncate block mt-0.5 cursor-help hover:text-cyan-300 transition-colors">
+                  {overview.name}
+                </span>
+              </Tooltip>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 block">Default Branch</span>
-              <span className="font-mono font-bold text-cyan-400 flex items-center gap-1 mt-0.5">
-                <GitBranch className="h-3 w-3" /> {overview.branch}
+            {/* 2. Default Branch */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700/80 transition-all duration-200 flex flex-col justify-between space-y-1.5 group">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5 group-hover:text-slate-300 transition-colors">
+                <GitBranch className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                Default Branch
               </span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-cyan-950/50 border border-cyan-800/50 font-mono font-bold text-cyan-300 text-xs truncate">
+                  <GitBranch className="h-3 w-3 text-cyan-400 shrink-0" /> {overview.branch}
+                </span>
+              </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 block">Visibility</span>
-              <span className="font-bold text-emerald-400 block mt-0.5">{overview.visibility}</span>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 block">Repository Size</span>
-              <span className="font-mono font-bold text-slate-200 block mt-0.5">{overview.size}</span>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 block">Last Commit Date</span>
-              <span className="font-mono font-medium text-slate-300 block mt-0.5">{overview.lastCommitDate}</span>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] uppercase font-semibold text-slate-400 block">Last Commit Author</span>
-              <span className="font-medium text-indigo-300 truncate block mt-0.5" title={overview.lastCommitAuthor}>
-                {overview.lastCommitAuthor}
+            {/* 3. Visibility */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700/80 transition-all duration-200 flex flex-col justify-between space-y-1.5 group">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5 group-hover:text-slate-300 transition-colors">
+                <Globe className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                Visibility
               </span>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-500/50 animate-pulse shrink-0" />
+                <span className="font-bold text-emerald-400 text-xs sm:text-sm capitalize truncate">
+                  {overview.visibility}
+                </span>
+              </div>
+            </div>
+
+            {/* 4. Repository Size */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700/80 transition-all duration-200 flex flex-col justify-between space-y-1.5 group">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5 group-hover:text-slate-300 transition-colors">
+                <HardDrive className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                Repository Size
+              </span>
+              <Tooltip title="Repository Size" content={`Codebase volume: ${overview.size}`} position="top">
+                <span className="font-mono font-bold text-indigo-300 text-xs sm:text-sm block mt-0.5 truncate cursor-help">
+                  {overview.size}
+                </span>
+              </Tooltip>
+            </div>
+
+            {/* 5. Last Commit */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700/80 transition-all duration-200 flex flex-col justify-between space-y-1.5 group">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5 group-hover:text-slate-300 transition-colors">
+                <Clock className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+                Last Commit
+              </span>
+              <Tooltip title="Last Commit Date" content={`Most recent commit timestamp: ${overview.lastCommitDate}`} position="top">
+                <span className="font-mono font-medium text-slate-200 text-xs sm:text-sm block mt-0.5 truncate cursor-help">
+                  {overview.lastCommitDate}
+                </span>
+              </Tooltip>
+            </div>
+
+            {/* 6. Last Commit Author */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/80 hover:bg-slate-900 border border-slate-800/80 hover:border-slate-700/80 transition-all duration-200 flex flex-col justify-between space-y-1.5 group">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-semibold text-slate-400 flex items-center gap-1.5 group-hover:text-slate-300 transition-colors">
+                <User className="h-3.5 w-3.5 text-teal-400 shrink-0" />
+                Last Commit Author
+              </span>
+              <Tooltip title="Commit Author" content={`Engineer: ${overview.lastCommitAuthor}. Responsible for recent commit diffs.`} position="top">
+                <span className="font-medium text-slate-200 text-xs sm:text-sm truncate block mt-0.5 cursor-help hover:text-teal-300 transition-colors">
+                  {overview.lastCommitAuthor}
+                </span>
+              </Tooltip>
             </div>
           </div>
         </motion.div>
 
         {/* Card 2: Technology Stack */}
-        <motion.div
-          whileHover={{ y: -2 }}
-          className="p-6 rounded-3xl glass-card border border-slate-800 space-y-4 shadow-xl"
-        >
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              <Code2 className="h-4 w-4 text-cyan-400" /> Technology Stack
-            </h4>
-            <span className="text-[11px] text-slate-400 font-mono">Auto-Detected</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 text-xs">
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-              <span className="text-[10px] uppercase font-semibold text-slate-400">Frontend Framework</span>
-              <p className="font-bold text-cyan-400 font-mono text-sm">{techStack.frontendFramework}</p>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-              <span className="text-[10px] uppercase font-semibold text-slate-400">Backend Framework</span>
-              <p className="font-bold text-indigo-400 font-mono text-sm">{techStack.backendFramework}</p>
-            </div>
-
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-              <span className="text-[10px] uppercase font-semibold text-slate-400">Package Manager</span>
-              <p className="font-bold text-emerald-400 font-mono text-sm">{techStack.packageManager}</p>
-            </div>
-          </div>
-
-          {/* Programming Languages Breakdown */}
-          <div className="space-y-2 pt-1">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-300">
-              <span>Programming Languages Distribution</span>
-              <span className="text-slate-400 font-mono">{languages.length} detected</span>
-            </div>
-
-            {/* Percentage Bar */}
-            <div className="w-full bg-slate-900 h-3.5 rounded-full overflow-hidden flex p-0.5 border border-slate-800">
-              {languages.map((lang, idx) => (
-                <div
-                  key={lang.language}
-                  style={{ width: `${lang.percentage}%` }}
-                  className={`h-full transition-all duration-500 ${
-                    idx === 0
-                      ? 'bg-cyan-400'
-                      : idx === 1
-                      ? 'bg-indigo-500'
-                      : idx === 2
-                      ? 'bg-amber-400'
-                      : idx === 3
-                      ? 'bg-emerald-400'
-                      : 'bg-slate-500'
-                  }`}
-                  title={`${lang.language}: ${lang.percentage}%`}
-                />
-              ))}
-            </div>
-
-            {/* Language Badges */}
-            <div className="flex flex-wrap gap-2 pt-1">
-              {languages.map((lang, idx) => (
-                <span
-                  key={lang.language}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] font-semibold text-slate-200"
-                >
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      idx === 0
-                        ? 'bg-cyan-400'
-                        : idx === 1
-                        ? 'bg-indigo-500'
-                        : idx === 2
-                        ? 'bg-amber-400'
-                        : idx === 3
-                        ? 'bg-emerald-400'
-                        : 'bg-slate-500'
-                    }`}
-                  />
-                  {lang.language} <strong className="text-cyan-400 font-mono">{lang.percentage}%</strong>
-                </span>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+        <TechnologyStackCard effectiveMetadata={effectiveMetadata} />
       </div>
 
       {/* Grid Row 2: Infrastructure & Dbs */}
@@ -474,27 +458,34 @@ export const RepositoryIntelligence = ({
             ].map((item) => {
               const detected = Boolean(infrastructure[item.key]);
               return (
-                <div
+                <Tooltip
                   key={item.key}
-                  className={`p-3 rounded-2xl border text-center transition-all ${
-                    detected
-                      ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
-                      : 'bg-slate-900/60 border-slate-800/80 text-slate-500'
-                  }`}
+                  title={`${item.label} Infrastructure`}
+                  content={detected ? `${item.label} service config detected in container/server manifests.` : `${item.label} was not found in active repository manifests.`}
+                  position="top"
+                  className="w-full"
                 >
-                  <span className="block text-[11px] font-semibold truncate" title={item.label}>
-                    {item.label}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold mt-1">
-                    {detected ? (
-                      <>
-                        <CheckCircle2 className="h-3 w-3 text-emerald-400" /> Detected
-                      </>
-                    ) : (
-                      'Not Detected'
-                    )}
-                  </span>
-                </div>
+                  <div
+                    className={`p-3 rounded-2xl border text-center transition-all w-full cursor-help ${
+                      detected
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : 'bg-slate-900/60 border-slate-800/80 text-slate-500'
+                    }`}
+                  >
+                    <span className="block text-[11px] font-semibold truncate">
+                      {item.label}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold mt-1">
+                      {detected ? (
+                        <>
+                          <CheckCircle2 className="h-3 w-3 text-emerald-400" /> Detected
+                        </>
+                      ) : (
+                        'Not Detected'
+                      )}
+                    </span>
+                  </div>
+                </Tooltip>
               );
             })}
           </div>
@@ -527,27 +518,34 @@ export const RepositoryIntelligence = ({
             ].map((item) => {
               const detected = Boolean(database[item.key]);
               return (
-                <div
+                <Tooltip
                   key={item.key}
-                  className={`p-3 rounded-2xl border text-center transition-all ${
-                    detected
-                      ? 'bg-cyan-950/30 border-cyan-500/40 text-cyan-300'
-                      : 'bg-slate-900/60 border-slate-800/80 text-slate-500'
-                  }`}
+                  title={`${item.label} Database`}
+                  content={detected ? `${item.label} ORM or driver detected in project package imports.` : `${item.label} was not detected in active dependencies.`}
+                  position="top"
+                  className="w-full"
                 >
-                  <span className="block text-[11px] font-semibold truncate" title={item.label}>
-                    {item.label}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold mt-1">
-                    {detected ? (
-                      <>
-                        <CheckCircle2 className="h-3 w-3 text-cyan-400" /> Detected
-                      </>
-                    ) : (
-                      'Not Detected'
-                    )}
-                  </span>
-                </div>
+                  <div
+                    className={`p-3 rounded-2xl border text-center transition-all w-full cursor-help ${
+                      detected
+                        ? 'bg-cyan-950/30 border-cyan-500/40 text-cyan-300'
+                        : 'bg-slate-900/60 border-slate-800/80 text-slate-500'
+                    }`}
+                  >
+                    <span className="block text-[11px] font-semibold truncate">
+                      {item.label}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold mt-1">
+                      {detected ? (
+                        <>
+                          <CheckCircle2 className="h-3 w-3 text-cyan-400" /> Detected
+                        </>
+                      ) : (
+                        'Not Detected'
+                      )}
+                    </span>
+                  </div>
+                </Tooltip>
               );
             })}
           </div>
@@ -581,27 +579,34 @@ export const RepositoryIntelligence = ({
             ].map((item) => {
               const detected = Boolean(authentication[item.key]);
               return (
-                <div
+                <Tooltip
                   key={item.key}
-                  className={`p-3 rounded-2xl border text-center transition-all ${
-                    detected
-                      ? 'bg-indigo-950/30 border-indigo-500/40 text-indigo-300'
-                      : 'bg-slate-900/60 border-slate-800/80 text-slate-500'
-                  }`}
+                  title={`${item.label} Auth Guard`}
+                  content={detected ? `${item.label} authentication provider configured in middleware.` : `${item.label} security provider not detected.`}
+                  position="top"
+                  className="w-full"
                 >
-                  <span className="block text-[11px] font-semibold truncate" title={item.label}>
-                    {item.label}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold mt-1">
-                    {detected ? (
-                      <>
-                        <CheckCircle2 className="h-3 w-3 text-indigo-400" /> Detected
-                      </>
-                    ) : (
-                      'Not Detected'
-                    )}
-                  </span>
-                </div>
+                  <div
+                    className={`p-3 rounded-2xl border text-center transition-all w-full cursor-help ${
+                      detected
+                        ? 'bg-indigo-950/30 border-indigo-500/40 text-indigo-300'
+                        : 'bg-slate-900/60 border-slate-800/80 text-slate-500'
+                    }`}
+                  >
+                    <span className="block text-[11px] font-semibold truncate">
+                      {item.label}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold mt-1">
+                      {detected ? (
+                        <>
+                          <CheckCircle2 className="h-3 w-3 text-indigo-400" /> Detected
+                        </>
+                      ) : (
+                        'Not Detected'
+                      )}
+                    </span>
+                  </div>
+                </Tooltip>
               );
             })}
           </div>
@@ -632,27 +637,34 @@ export const RepositoryIntelligence = ({
             ].map((item) => {
               const detected = Boolean(testing[item.key]);
               return (
-                <div
+                <Tooltip
                   key={item.key}
-                  className={`p-3 rounded-2xl border text-center transition-all ${
-                    detected
-                      ? 'bg-amber-950/30 border-amber-500/40 text-amber-300'
-                      : 'bg-slate-900/60 border-slate-800/80 text-slate-500'
-                  }`}
+                  title={`${item.label} Test Runner`}
+                  content={detected ? `${item.label} test suite configured and executable.` : `${item.label} test runner configuration not present.`}
+                  position="top"
+                  className="w-full"
                 >
-                  <span className="block text-[11px] font-semibold truncate" title={item.label}>
-                    {item.label}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold mt-1">
-                    {detected ? (
-                      <>
-                        <CheckCircle2 className="h-3 w-3 text-amber-400" /> Detected
-                      </>
-                    ) : (
-                      'Not Found'
-                    )}
-                  </span>
-                </div>
+                  <div
+                    className={`p-3 rounded-2xl border text-center transition-all w-full cursor-help ${
+                      detected
+                        ? 'bg-amber-950/30 border-amber-500/40 text-amber-300'
+                        : 'bg-slate-900/60 border-slate-800/80 text-slate-500'
+                    }`}
+                  >
+                    <span className="block text-[11px] font-semibold truncate">
+                      {item.label}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold mt-1">
+                      {detected ? (
+                        <>
+                          <CheckCircle2 className="h-3 w-3 text-amber-400" /> Detected
+                        </>
+                      ) : (
+                        'Not Found'
+                      )}
+                    </span>
+                  </div>
+                </Tooltip>
               );
             })}
           </div>
@@ -742,107 +754,21 @@ export const RepositoryIntelligence = ({
         </motion.div>
       </div>
 
-      {/* Grid Row 5: Repository Health & Readiness Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Card 9: Repository Health */}
-        <motion.div
-          whileHover={{ y: -2 }}
-          className="p-6 rounded-3xl glass-card border border-slate-800 space-y-4 shadow-xl"
-        >
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              <Gauge className="h-4 w-4 text-cyan-400" /> Repository Health
-            </h4>
-            <Badge
-              variant={
-                health.healthStatus === 'Excellent'
-                  ? 'success'
-                  : health.healthStatus === 'Good'
-                  ? 'info'
-                  : health.healthStatus === 'Moderate'
-                  ? 'warning'
-                  : 'critical'
-              }
-              className="text-xs"
-            >
-              {health.healthStatus}
-            </Badge>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-6 pt-2">
-            {/* Score Gauge Circle */}
-            <div className="relative flex items-center justify-center h-28 w-28 shrink-0">
-              <svg className="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
-                <path
-                  className="text-slate-800"
-                  strokeWidth="3.5"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                <motion.path
-                  className="text-cyan-400"
-                  strokeWidth="3.5"
-                  strokeDasharray={`${health.repositoryHealthScore}, 100`}
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  fill="none"
-                  initial={{ strokeDasharray: '0, 100' }}
-                  animate={{ strokeDasharray: `${health.repositoryHealthScore}, 100` }}
-                  transition={{ duration: 1 }}
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center">
-                <span className="text-2xl font-bold font-mono text-slate-100">{health.repositoryHealthScore}%</span>
-                <span className="text-[9px] uppercase font-semibold text-cyan-400">Health Index</span>
-              </div>
-            </div>
-
-            {/* Health Breakdown Meters */}
-            <div className="w-full space-y-2.5 text-xs">
-              <div>
-                <div className="flex items-center justify-between font-semibold text-slate-300 mb-1">
-                  <span>Project Completeness</span>
-                  <span className="font-mono text-cyan-400">{health.completeness}%</span>
-                </div>
-                <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
-                  <div className="bg-cyan-400 h-full rounded-full" style={{ width: `${health.completeness}%` }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between font-semibold text-slate-300 mb-1">
-                  <span>Documentation Score</span>
-                  <span className="font-mono text-indigo-400">{health.documentationScore}%</span>
-                </div>
-                <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
-                  <div className="bg-indigo-400 h-full rounded-full" style={{ width: `${health.documentationScore}%` }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between font-semibold text-slate-300 mb-1">
-                  <span>Dependency Health</span>
-                  <span className="font-mono text-emerald-400">{health.dependencyHealth}%</span>
-                </div>
-                <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${health.dependencyHealth}%` }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between font-semibold text-slate-300 mb-1">
-                  <span>Code Organization</span>
-                  <span className="font-mono text-amber-400">{health.codeOrganization}%</span>
-                </div>
-                <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
-                  <div className="bg-amber-400 h-full rounded-full" style={{ width: `${health.codeOrganization}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+      {/* Grid Row 5: Repository Health Section & Readiness Panel */}
+      <div className="space-y-6">
+        <RepositoryHealthSection
+          healthData={health?.repositoryHealthScore ? {
+            overallHealth: health.repositoryHealthScore,
+            architecture: health.codeOrganization,
+            maintainability: health.completeness,
+            complexity: 82,
+            security: 95,
+            testCoverage: health.dependencyHealth,
+            technicalDebt: 14,
+            documentation: health.documentationScore
+          } : null}
+          onRunAudit={onLaunchScan}
+        />
 
         {/* Card 10: Readiness Panel Checklist */}
         <motion.div
@@ -853,30 +779,47 @@ export const RepositoryIntelligence = ({
             <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-400" /> Readiness Panel Checklist
             </h4>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950 px-2.5 py-0.5 rounded-full border border-emerald-800">
-              READY FOR SCAN
+            <span
+              className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                checklist.readyForBlastAnalysis
+                  ? 'text-emerald-400 bg-emerald-950 border-emerald-800'
+                  : 'text-amber-400 bg-amber-950 border-amber-800'
+              }`}
+            >
+              {checklist.readyForBlastAnalysis ? 'READY FOR SCAN' : 'PRE-FLIGHT PENDING'}
             </span>
           </div>
 
           <div className="space-y-2.5 text-xs">
             {[
-              { label: 'Repository Uploaded', done: checklist.repositoryUploaded },
-              { label: 'Repository Validated', done: checklist.repositoryValidated },
-              { label: 'Metadata Generated', done: checklist.metadataGenerated },
-              { label: 'Language Detection Completed', done: checklist.languageDetectionCompleted },
-              { label: 'Dependency Graph Ready', done: checklist.dependencyGraphReady },
-              { label: 'AST Parser Ready', done: checklist.astParserReady },
-              { label: 'Ready for Blast Radius Analysis', done: checklist.readyForBlastAnalysis }
+              { label: 'Repository Uploaded', done: Boolean(checklist.repositoryUploaded) },
+              { label: 'Repository Validated', done: Boolean(checklist.repositoryValidated) },
+              { label: 'Metadata Generated', done: Boolean(checklist.metadataGenerated) },
+              { label: 'Language Detection Completed', done: Boolean(checklist.languageDetectionCompleted) },
+              { label: 'Dependency Graph Ready', done: Boolean(checklist.dependencyGraphReady) },
+              { label: 'AST Parser Ready', done: Boolean(checklist.astParserReady) },
+              { label: 'Ready for Blast Radius Analysis', done: Boolean(checklist.readyForBlastAnalysis) }
             ].map((item, idx) => (
               <div
                 key={idx}
                 className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800/90"
               >
                 <span className="font-medium text-slate-200 flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400 font-bold" /> {item.label}
+                  {item.done ? (
+                    <Check className="h-4 w-4 text-emerald-400 font-bold" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-amber-400 font-bold" />
+                  )}
+                  {item.label}
                 </span>
-                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-800/80">
-                  PASSED
+                <span
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
+                    item.done
+                      ? 'text-emerald-400 bg-emerald-950/60 border-emerald-800/80'
+                      : 'text-amber-400 bg-amber-950/60 border-amber-800/80'
+                  }`}
+                >
+                  {item.done ? 'PASSED' : 'PENDING'}
                 </span>
               </div>
             ))}

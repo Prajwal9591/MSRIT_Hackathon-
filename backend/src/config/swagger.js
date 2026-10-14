@@ -14,8 +14,8 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:5000/api/v1',
-        description: 'Local Development Server'
+        url: '/api/v1',
+        description: 'AegisBlast API Server'
       }
     ],
     paths: {
@@ -86,24 +86,49 @@ const options = {
       },
       '/impact/calculate': {
         post: {
-          summary: 'Calculate Concentric Blast Radius & Multi-Factor Risk Score Matrix',
+          summary: 'Calculate Concentric Blast Radius & Multi-Factor Risk Score Matrix (Change & Git Diff-Aware)',
           requestBody: {
-            required: true,
+            required: false,
             content: {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['changedFile', 'changedFunction'],
                   properties: {
                     changedFile: { type: 'string', example: 'src/services/StripeWebhookHandler.ts' },
-                    changedFunction: { type: 'string', example: 'handlePaymentIntentSucceeded' }
+                    changedFunction: { type: 'string', example: 'handlePaymentIntentSucceeded' },
+                    diffText: { type: 'string', description: 'Raw Git unified diff text to seed exact changed files and symbols' },
+                    commitHash: { type: 'string', example: '8f92a1b' },
+                    baseSha: { type: 'string', example: 'HEAD~1' },
+                    targetSha: { type: 'string', example: 'HEAD' }
                   }
                 }
               }
             }
           },
           responses: {
-            200: { description: 'Concentric blast radius impact calculated' }
+            200: { description: 'Concentric blast radius impact calculated from exact Git change set' }
+          }
+        }
+      },
+      '/impact/diff/parse': {
+        post: {
+          summary: 'Parse unified Git diff text and extract modified files, hunks, line changes, and symbols',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['diffText'],
+                  properties: {
+                    diffText: { type: 'string', example: 'diff --git a/src/index.js b/src/index.js\n--- a/src/index.js\n+++ b/src/index.js\n@@ -1,1 +1,2 @@\n+export function test() {}\n const a = 1;' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'Git unified diff parsed into structured file changes and symbols' }
           }
         }
       },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileCode, AlertCircle, Sparkles, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { FileCode } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Badge } from '../common/Badge';
 
@@ -27,14 +27,14 @@ export const FileDiffViewer = () => {
           <span className="text-xs font-mono text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800/60">
             -{selectedFile.deletions}
           </span>
-          <Badge variant={selectedFile.risk.toLowerCase()} className="text-xs">
-            {selectedFile.risk} Risk
+          <Badge variant={String(selectedFile?.risk || 'info').toLowerCase()} className="text-xs">
+            {selectedFile?.risk || 'INFO'} Risk
           </Badge>
         </div>
       </div>
 
       {/* Impacted Functions */}
-      {selectedFile.functionsModified && selectedFile.functionsModified.length > 0 && (
+      {selectedFile?.functionsModified && selectedFile.functionsModified.length > 0 && (
         <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-2">
           <span className="text-xs text-slate-400 font-semibold">Modified AST Functions:</span>
           <div className="flex flex-wrap gap-1.5">
@@ -54,10 +54,11 @@ export const FileDiffViewer = () => {
           <span>UTF-8 • TypeScript</span>
         </div>
         <div className="p-4 overflow-x-auto text-slate-300 leading-relaxed">
-          {diffContent.split('\n').map((line, i) => {
-            const isAdd = line.startsWith('+') && !line.startsWith('+++');
-            const isDel = line.startsWith('-') && !line.startsWith('---');
-            const isHeader = line.startsWith('@@') || line.startsWith('diff');
+          {String(diffContent || '').split('\n').map((line, i) => {
+            const strLine = String(line || '');
+            const isAdd = strLine.startsWith('+') && !strLine.startsWith('+++');
+            const isDel = strLine.startsWith('-') && !strLine.startsWith('---');
+            const isHeader = strLine.startsWith('@@') || strLine.startsWith('diff');
 
             return (
               <div

@@ -5,9 +5,9 @@ import { logger } from './utils/logger.js';
 let currentPort = Number(config.port || 5000);
 
 const startServer = (portToTry) => {
-  const server = app.listen(portToTry, () => {
+  const server = app.listen(portToTry, '0.0.0.0', () => {
     logger.info(`⚡ AegisBlast Express Server running on port ${portToTry} [${config.nodeEnv}]`);
-    logger.info(`🔗 Available Endpoints: http://localhost:${portToTry}/health, /upload, /analyze, /metadata, /dependency, /impact, /explain`);
+    logger.info(`🔗 Available Endpoints: http://127.0.0.1:${portToTry}/health, /upload, /analyze, /metadata, /dependency, /impact, /explain`);
   });
 
   server.on('error', (err) => {

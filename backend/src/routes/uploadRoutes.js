@@ -6,8 +6,8 @@ const upload = multer({ dest: 'uploads/' });
 const router = Router();
 
 // POST /upload or /upload/zip (ZIP archive upload)
-router.post('/upload', upload.single('archive'), uploadController.handleZipUpload);
-router.post('/upload/zip', upload.single('archive'), uploadController.handleZipUpload);
+router.post('/upload', upload.any(), uploadController.handleZipUpload);
+router.post('/upload/zip', upload.any(), uploadController.handleZipUpload);
 
 // POST /upload/folder (Local Folder directory upload)
 router.post('/upload/folder', uploadController.handleFolderUpload);

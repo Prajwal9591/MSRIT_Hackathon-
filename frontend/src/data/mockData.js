@@ -1,5 +1,37 @@
 export const mockRepositories = [
   {
+    id: 'repo-arbitrage-engine',
+    name: 'AI-Powered-Real-Time-Arbitrage-Detection-Engine',
+    owner: 'Prajwal-S-45',
+    fullName: 'Prajwal-S-45 / AI-Powered-Real-Time-Arbitrage-Detection-Engine',
+    gitUrl: 'https://github.com/Prajwal-S-45/AI-Powered-Real-Time-Arbitrage-Detection-Engine.git',
+    branch: 'main',
+    branches: ['main', 'develop', 'feature/smart-contract-arbitrage', 'fix/orderbook-depth-latency'],
+    language: 'TypeScript',
+    languages: ['TypeScript', 'Node.js', 'Python', 'Docker'],
+    visibility: 'Public',
+    stars: 184,
+    lastAnalyzed: '2 hours ago',
+    lastUpdated: '2 hours ago',
+    riskScore: 15, // Low (15/100)
+    healthScore: 88, // Good (88/100)
+    securityScore: 92, // Good (92/100)
+    maintainabilityScore: 85, // Good (85/100)
+    status: 'Repository Analyzed',
+    statusSubtitle: 'Completed 2 hours ago',
+    description: 'Real-time arbitrage detection using AI with smart contracts and market data analysis.',
+    commitsCount: 42,
+    dependenciesCount: 16,
+    fileCount: 100,
+    contributorsCount: 18,
+    techStack: [
+      { name: 'TypeScript', percentage: 68, color: '#3178c6', type: 'Language', icon: 'TS' },
+      { name: 'Node.js', percentage: 22, color: '#22c55e', type: 'Runtime', icon: 'Node' },
+      { name: 'Python', percentage: 6, color: '#eab308', type: 'AI & Analysis', icon: 'Py' },
+      { name: 'Docker', percentage: 4, color: '#38bdf8', type: 'Containerization', icon: 'Doc' }
+    ]
+  },
+  {
     id: 'repo-1',
     name: 'payment-gateway-service',
     owner: 'fintech-org',
@@ -66,6 +98,76 @@ export const mockRepositories = [
 ];
 
 export const mockCommits = [
+  {
+    id: 'c-arb-01',
+    hash: 'a7b8c9d',
+    author: 'Prajwal-S-45',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+    timestamp: '2 hours ago',
+    message: 'feat(arbitrage): add high-frequency smart contract mempool listener and order routing',
+    filesChangedCount: 5,
+    additions: 248,
+    deletions: 42,
+    riskRating: 'Low',
+    riskScore: 15,
+    files: [
+      {
+        path: 'src/api/controller/AppController.ts',
+        name: 'AppController.ts',
+        status: 'modified',
+        additions: 248,
+        deletions: 12,
+        lines: 248,
+        risk: 'High',
+        impactReason: 'Direct controller handling REST routing, arbitrage triggering, and service dispatch.',
+        functionsModified: ['detectArbitrageOpportunity', 'executeTradeOrder', 'getSystemHealth']
+      },
+      {
+        path: 'src/services/AuthService.ts',
+        name: 'AuthService.ts',
+        status: 'modified',
+        additions: 186,
+        deletions: 14,
+        lines: 186,
+        risk: 'Medium',
+        impactReason: 'Core authentication token issuing and API key validation for high-frequency trading clients.',
+        functionsModified: ['validateApiKey', 'issueSessionToken']
+      },
+      {
+        path: 'src/repositories/UserRepository.ts',
+        name: 'UserRepository.ts',
+        status: 'modified',
+        additions: 142,
+        deletions: 8,
+        lines: 142,
+        risk: 'Low',
+        impactReason: 'User entity queries and account settings persistence in PostgreSQL.',
+        functionsModified: ['findById', 'updateTradingPreferences']
+      },
+      {
+        path: 'src/config/index.ts',
+        name: 'index.ts',
+        status: 'modified',
+        additions: 98,
+        deletions: 4,
+        lines: 98,
+        risk: 'Low',
+        impactReason: 'Environment variable loading for RPC node endpoints and contract addresses.',
+        functionsModified: ['loadAppConfig', 'validateEnvVariables']
+      },
+      {
+        path: 'src/models/User.ts',
+        name: 'User.ts',
+        status: 'modified',
+        additions: 76,
+        deletions: 4,
+        lines: 76,
+        risk: 'Low',
+        impactReason: 'User schema definition and relation mapping for trading sessions.',
+        functionsModified: ['UserSchema']
+      }
+    ]
+  },
   {
     id: 'c-8f92a1',
     hash: '8f92a1b',

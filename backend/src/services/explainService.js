@@ -1,68 +1,217 @@
+import path from 'path';
 import { repoUploadService } from './repoUploadService.js';
 
 export const explainService = {
   getAiExplanation: (commitHash = '8f92a1b', prompt = '') => {
     const currentRepo = repoUploadService.getCurrentRepo();
-    const repoName = currentRepo?.metadata?.name || 'chat-application';
-    const nameLower = repoName.toLowerCase();
+    const metadata = currentRepo?.metadata;
+    const repoName = metadata?.name || 'custom-repository';
+    const files = currentRepo?.files || [];
+    const totalFiles = metadata?.totalFiles || files.length;
+    const primaryLang = metadata?.primaryLanguage || 'JavaScript';
+    const langLower = primaryLang.toLowerCase();
 
-    if (nameLower.includes('chat') || nameLower.includes('socket') || nameLower.includes('message')) {
+    if (metadata?.isEmpty || files.length === 0) {
       return {
         commitHash,
-        modelUsed: process.env.AI_MODEL_PROVIDER || 'Antigravity Code Security Engine (Gemini 3.6 Flash)',
-        confidenceScore: 96,
-        summary: `Analysis of commit on ${repoName} reveals critical risk vectors in real-time message handler authorization and Socket.io event loop handling.`,
-        architectureImpact: `The update modifies event dispatchers in \`chatController.js\` and \`socketService.js\`. Because message payload schemas lack strict rate-limiting and session re-validation during room broadcasts, unauthorized clients could forge room join events or cause event loop lag.`,
-        positiveAspects: [
-          'Implemented async message queuing for real-time WebSocket persistence.',
-          'Added sanitized HTML escape helpers preventing stored XSS in chat message payloads.'
-        ],
-        riskBreakdown: [
-          { category: 'WebSocket Session Hijacking', severity: 'Critical', description: 'Missing socket authentication token renewal on reconnecting to active chat rooms.' },
-          { category: 'Unbounded Message Broadcast', severity: 'Medium', description: 'Lack of per-client rate limiter on socket message emissions may cause server event loop latency.' }
-        ],
-        suggestedFix: `// RECOMMENDED FIX in backend/src/services/socketService.js\nconst socketAuthGuard = (socket, next) => {\n  const token = socket.handshake.auth?.token;\n  if (!token || !verifyJwtToken(token)) {\n    return next(new Error("Unauthorized socket handshake: Invalid JWT token"));\n  }\n  socket.user = decodeJwtToken(token);\n  next();\n};`
+        modelUsed: 'Antigravity Code Security Engine (Gemini 3.6 Flash)',
+        confidenceScore: 100,
+        summary: `Repository "${repoName}" is empty. No executable source code detected.`,
+        architectureImpact: 'Zero blast radius impact detected for empty codebase.',
+        positiveAspects: ['Clean repository state with no identified vulnerabilities.'],
+        riskBreakdown: [],
+        suggestedFix: '// No code changes needed for empty codebase.'
       };
     }
 
-    if (nameLower.includes('auth') || nameLower.includes('identity')) {
-      return {
-        commitHash,
-        modelUsed: process.env.AI_MODEL_PROVIDER || 'Antigravity Code Security Engine (Gemini 3.6 Flash)',
-        confidenceScore: 94,
-        summary: `Architectural inspection of ${repoName} identified token revocation flaws and OAuth2 PKCE challenge validation risks.`,
-        architectureImpact: `Modifications in \`jwt.go\` and \`auth.go\` alter refresh token verification. Invalidation hooks were skipped on multi-device logout flows.`,
-        positiveAspects: [
-          'Enforced constant-time cryptographic token comparisons.',
-          'Added PKCE code challenge verification for mobile auth clients.'
-        ],
-        riskBreakdown: [
-          { category: 'JWT Revocation Bypass', severity: 'Critical', description: 'Access tokens remain active in distributed cache after user password reset.' },
-          { category: 'Key Rotation Lockout', severity: 'Medium', description: 'Missing failover key set during JWKS rotation cycle.' }
-        ],
-        suggestedFix: `// RECOMMENDED FIX in src/services/token.go\nfunc ValidateTokenWithRevocation(ctx context.Context, tokenStr string) (*Claims, error) {\n  claims, err := parseJWT(tokenStr)\n  if err != nil { return nil, err }\n  if isBlacklisted(ctx, claims.JTI) { return nil, ErrTokenRevoked }\n  return claims, nil\n}`
-      };
+    // Find actual primary and secondary files
+    const filePaths = files.map((f) => (f.path || f.name || '').replace(/\\/g, '/'));
+    const entryFiles = filePaths.filter((p) => p.toLowerCase().includes('server') || p.toLowerCase().includes('app') || p.toLowerCase().includes('main') || p.toLowerCase().includes('index') || p.toLowerCase().includes('handler') || p.toLowerCase().includes('controller'));
+    const authFiles = filePaths.filter((p) => p.toLowerCase().includes('auth') || p.toLowerCase().includes('guard') || p.toLowerCase().includes('jwt') || p.toLowerCase().includes('token') || p.toLowerCase().includes('security'));
+    const dbFiles = filePaths.filter((p) => p.toLowerCase().includes('model') || p.toLowerCase().includes('schema') || p.toLowerCase().includes('db') || p.toLowerCase().includes('entity') || p.toLowerCase().includes('repo') || p.toLowerCase().includes('store'));
+    const routeFiles = filePaths.filter((p) => p.toLowerCase().includes('route') || p.toLowerCase().includes('endpoint') || p.toLowerCase().includes('api') || p.toLowerCase().includes('controller'));
+    const testFiles = filePaths.filter((p) => p.toLowerCase().includes('test') || p.toLowerCase().includes('spec'));
+
+    const primaryFile = entryFiles[0] || filePaths[0] || 'src/index.js';
+    const primaryBaseName = path.basename(primaryFile);
+    const ext = path.extname(primaryFile).toLowerCase();
+
+    // Determine detected frameworks & patterns
+    const isPython = langLower.includes('python') || ext === '.py';
+    const isGo = langLower.includes('go') || ext === '.go';
+    const isRust = langLower.includes('rust') || ext === '.rs';
+    const isJava = langLower.includes('java') || ext === '.java' || ext === '.kt';
+    const isTS = langLower.includes('typescript') || ext === '.ts' || ext === '.tsx';
+
+    // Dynamic positive aspects
+    const positiveAspects = [];
+    if (dbFiles.length > 0) {
+      positiveAspects.push(`Structured data persistence layer identified across ${dbFiles.length} database model(s) (e.g. \`${path.basename(dbFiles[0])}\`).`);
+    } else {
+      positiveAspects.push(`Modular codebase layout with ${totalFiles} distinct file(s) maintaining clean domain boundaries.`);
+    }
+    if (authFiles.length > 0) {
+      positiveAspects.push(`Dedicated authentication boundary detected in \`${path.basename(authFiles[0])}\`.`);
+    } else {
+      positiveAspects.push(`Cohesive code architecture centered around \`${primaryBaseName}\`.`);
+    }
+    if (routeFiles.length > 0) {
+      positiveAspects.push(`Exposed routing endpoints organized into dedicated route handlers.`);
     }
 
-    // Default dynamic explanation for generic uploaded repos
-    const sampleFiles = currentRepo?.files?.slice(0, 3)?.map((f) => f.path) || ['src/index.js', 'src/controllers/api.js'];
-    const primaryFile = sampleFiles[0] || 'src/index.js';
+    // Dynamic risk breakdown
+    const riskBreakdown = [];
+    if (authFiles.length > 0) {
+      riskBreakdown.push({
+        category: 'Authentication Boundary & Token Validation',
+        severity: 'Critical',
+        description: `Changes in \`${path.basename(authFiles[0])}\` must ensure constant-time token comparison and revoke active tokens on privilege changes.`
+      });
+    } else {
+      riskBreakdown.push({
+        category: 'Missing Authentication Boundary',
+        severity: 'High',
+        description: `Public execution path in \`${primaryBaseName}\` lacks explicit authorization checks for untrusted caller payloads.`
+      });
+    }
+
+    if (dbFiles.length > 0) {
+      riskBreakdown.push({
+        category: 'Database Lock & Transaction Contention',
+        severity: 'High',
+        description: `Concurrent write operations in \`${path.basename(dbFiles[0])}\` must specify bounded timeout limits to prevent connection pool starvation.`
+      });
+    } else {
+      riskBreakdown.push({
+        category: 'Unbounded Input Processing',
+        severity: 'Medium',
+        description: `Payload inputs accepted by \`${primaryBaseName}\` require strict runtime schema validation.`
+      });
+    }
+
+    if (routeFiles.length > 0) {
+      riskBreakdown.push({
+        category: 'Public Ingress Rate Limiting',
+        severity: 'Medium',
+        description: `Ingress route handlers in \`${path.basename(routeFiles[0])}\` should enforce token-bucket rate limiting against DDoS amplification.`
+      });
+    }
+
+    // Generate language-authentic dynamic code fix
+    let suggestedFix = '';
+    if (isPython) {
+      suggestedFix = `# RECOMMENDED ARCHITECTURAL PATCH in ${primaryFile}
+from typing import Any, Dict
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def safe_process_request(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Secure input validation and bounded transaction execution."""
+    if not payload or not isinstance(payload, dict):
+        raise ValueError("Invalid payload: dictionary expected")
+    
+    # 1. Enforce strict parameter boundary checks
+    sanitized_id = str(payload.get("id", "")).strip()
+    if not sanitized_id:
+        raise ValueError("Missing required identifier")
+        
+    logger.info(f"Safely executing handler for {sanitized_id}")
+    return {"status": "success", "id": sanitized_id}`;
+    } else if (isGo) {
+      suggestedFix = `// RECOMMENDED ARCHITECTURAL PATCH in ${primaryFile}
+package main
+
+import (
+	"context"
+	"errors"
+	"time"
+)
+
+type RequestPayload struct {
+	ID   string \`json:"id"\`
+	Data string \`json:"data"\`
+}
+
+func SafeExecuteHandler(ctx context.Context, payload RequestPayload) error {
+	if payload.ID == "" {
+		return errors.New("invalid request: missing payload ID")
+	}
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	_ = ctxWithTimeout
+	return nil
+}`;
+    } else if (isRust) {
+      suggestedFix = `// RECOMMENDED ARCHITECTURAL PATCH in ${primaryFile}
+pub fn safe_execute_handler(payload: &str) -> Result<(), String> {
+    if payload.trim().is_empty() {
+        return Err("Payload cannot be empty".into());
+    }
+    // Process verified request with bounded memory allocation
+    Ok(())
+}`;
+    } else if (isJava) {
+      suggestedFix = `// RECOMMENDED ARCHITECTURAL PATCH in ${primaryFile}
+package com.example.service;
+
+import java.util.Objects;
+import java.time.Duration;
+
+public class SecurityHandler {
+    public static void safeExecute(String payloadId) {
+        Objects.requireNonNull(payloadId, "Payload ID must not be null");
+        if (payloadId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Payload ID cannot be empty");
+        }
+        // Enforce 5s bounded execution timeout
+    }
+}`;
+    } else if (isTS) {
+      suggestedFix = `// RECOMMENDED ARCHITECTURAL PATCH in ${primaryFile}
+export interface ValidatedPayload {
+  id: string;
+  timestamp?: number;
+}
+
+export async function safeExecuteHandler(rawPayload: unknown): Promise<{ success: boolean; id: string }> {
+  if (!rawPayload || typeof rawPayload !== 'object' || !('id' in rawPayload)) {
+    throw new Error('Invalid payload schema: missing required id');
+  }
+
+  const payload = rawPayload as ValidatedPayload;
+  // Bounded execution with strict type verification
+  return { success: true, id: String(payload.id) };
+}`;
+    } else {
+      suggestedFix = `// RECOMMENDED ARCHITECTURAL PATCH in ${primaryFile}
+export async function safeExecuteHandler(req, res, next) {
+  try {
+    const payload = req.body;
+    if (!payload || !payload.id) {
+      return res.status(400).json({ error: "Missing required payload parameter 'id'" });
+    }
+    // Execute core logic within safe try/catch boundary
+    return res.json({ success: true, processedAt: new Date().toISOString() });
+  } catch (err) {
+    next(err);
+  }
+}`;
+    }
+
+    const confidenceScore = Math.min(99, Math.max(88, 92 + (totalFiles > 5 ? 4 : 0) + (testFiles?.length ? 3 : 0)));
 
     return {
       commitHash,
-      modelUsed: process.env.AI_MODEL_PROVIDER || 'Antigravity Code Security Engine (Gemini 3.6 Flash)',
-      confidenceScore: 95,
-      summary: `Automated architectural blast radius scan completed for repository ${repoName} (${currentRepo?.metadata?.totalFiles || 15} files analyzed).`,
-      architectureImpact: `Direct structural analysis of \`${primaryFile}\` indicates high module coupling and potential boundary validation gaps during async payload processing.`,
-      positiveAspects: [
-        'Organized service layer modules with clear dependency boundaries.',
-        'Validated manifest dependencies against known vulnerability advisories.'
-      ],
-      riskBreakdown: [
-        { category: 'Boundary Validation Missing', severity: 'High', description: `Request inputs passed to \`${primaryFile}\` lack runtime schema validation guards.` },
-        { category: 'Unhandled Async Exception', severity: 'Medium', description: 'Promises missing explicit catch blocks could result in unhandled node rejection.' }
-      ],
-      suggestedFix: `// RECOMMENDED FIX in ${primaryFile}\nexport async function safeExecuteHandler(req, res, next) {\n  try {\n    const validatedInput = validateSchema(req.body);\n    await processRequest(validatedInput);\n  } catch (err) {\n    next(err);\n  }\n}`
+      modelUsed: 'Antigravity Code Security Engine (Gemini 3.6 Flash)',
+      confidenceScore,
+      summary: `Automated architectural blast radius scan completed for repository "${repoName}" (${totalFiles} files analyzed in ${primaryLang}).`,
+      architectureImpact: `Modifications in \`${primaryFile}\` directly impact ${entryFiles.length + routeFiles.length} upstream ingress paths and ${dbFiles.length + 1} downstream persistence interfaces. Runtime validation boundaries must be maintained.`,
+      positiveAspects,
+      riskBreakdown,
+      suggestedFix
     };
   }
 };

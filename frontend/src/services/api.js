@@ -46,11 +46,11 @@ export const api = {
   },
 
   // Trigger Blast Radius Analysis
-  runAnalysis: async (repoId, commitHash) => {
+  runAnalysis: async (repoId, commitHash, diffText) => {
     const response = await fetch(`${API_BASE_URL}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repoId, commitHash })
+      body: JSON.stringify({ repoId, commitHash, diffText })
     });
     if (!response.ok) throw new Error('Analysis failed');
     return await response.json();
@@ -86,20 +86,38 @@ export const api = {
   },
 
   // Get Concentric Blast Radius Scope Layers
-  getImpactLayers: async (commitHash) => {
-    const response = await fetch(`${API_BASE_URL}/impact?commitHash=${encodeURIComponent(commitHash || '')}`);
+  getImpactLayers: async (commitHash, diffText) => {
+    const params = new URLSearchParams();
+    if (commitHash) params.append('commitHash', commitHash);
+    if (diffText) params.append('diffText', diffText);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    const response = await fetch(`${API_BASE_URL}/impact${queryString}`);
     if (!response.ok) throw new Error('Failed to fetch impact layers');
     return await response.json();
   },
 
   // Calculate full impact analysis with algorithms & risk matrix
-  calculateImpact: async (changedFile, changedFunction) => {
+  calculateImpact: async (paramsOrFile, changedFunction) => {
+    const payload = typeof paramsOrFile === 'object' && paramsOrFile !== null
+      ? paramsOrFile
+      : { changedFile: paramsOrFile, changedFunction };
     const response = await fetch(`${API_BASE_URL}/impact/calculate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ changedFile, changedFunction })
+      body: JSON.stringify(payload)
     });
     if (!response.ok) throw new Error('Impact calculation failed');
+    return await response.json();
+  },
+
+  // Parse Unified Git Diff
+  parseDiff: async (diffText) => {
+    const response = await fetch(`${API_BASE_URL}/impact/diff/parse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ diffText })
+    });
+    if (!response.ok) throw new Error('Diff parsing failed');
     return await response.json();
   },
 
@@ -141,6 +159,55 @@ export const api = {
       body: isFormData ? payload : JSON.stringify(payload)
     });
     if (!response.ok) throw new Error('Failed to parse repository metadata');
+    return await response.json();
+  },
+
+  // Repository Analysis Engine - Single Scan & Metrics API
+  analyzeRepository: async (payload = {}) => {
+    const isFormData = payload instanceof FormData;
+    const response = await fetch(`${API_BASE_URL}/analysis-engine/analyze`, {
+      method: 'POST',
+      headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+      body: isFormData ? payload : JSON.stringify(payload)
+    });
+    if (!response.ok) throw new Error('Repository analysis failed');
+    return await response.json();
+  },
+
+  getAnalyzedRepository: async (repoId) => {
+    const response = await fetch(`${API_BASE_URL}/analysis-engine/repository/${encodeURIComponent(repoId)}`);
+    if (!response.ok) throw new Error('Failed to fetch analyzed repository');
+    return await response.json();
+  },
+
+  getAllAnalyzedRepositories: async () => {
+    const response = await fetch(`${API_BASE_URL}/analysis-engine/repositories`);
+    if (!response.ok) throw new Error('Failed to fetch analyzed repositories list');
+    return await response.json();
+  },
+
+  clearAnalyzedRepository: async (repoId) => {
+    const response = await fetch(`${API_BASE_URL}/analysis-engine/repository/${encodeURIComponent(repoId)}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error('Failed to clear repository analysis');
+    return await response.json();
+  },
+
+  // Security Audit API
+  getSecurityAudit: async (repoId) => {
+    const response = await fetch(`${API_BASE_URL}/security/audit?repoId=${encodeURIComponent(repoId || '')}`);
+    if (!response.ok) throw new Error('Failed to fetch security audit');
+    return await response.json();
+  },
+
+  scanSecurity: async (files = [], repoName = 'repository') => {
+    const response = await fetch(`${API_BASE_URL}/security/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files, repoName })
+    });
+    if (!response.ok) throw new Error('Security scan failed');
     return await response.json();
   }
 };

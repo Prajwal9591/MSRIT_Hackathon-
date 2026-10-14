@@ -9,11 +9,11 @@ const upload = multer({
 
 const router = Router();
 
-// POST /scanner/parse-metadata
-router.post('/scanner/parse-metadata', upload.single('zipFile'), repoScannerController.parseMetadata);
+// POST /scanner/parse-metadata (Accepts single ZIP, multiple code files, or JSON)
+router.post('/scanner/parse-metadata', upload.any(), repoScannerController.parseMetadata);
 
 // Alias routes for frontend compatibility
-router.post('/parse-metadata', upload.single('zipFile'), repoScannerController.parseMetadata);
-router.post('/metadata/parse', upload.single('zipFile'), repoScannerController.parseMetadata);
+router.post('/parse-metadata', upload.any(), repoScannerController.parseMetadata);
+router.post('/metadata/parse', upload.any(), repoScannerController.parseMetadata);
 
 export default router;

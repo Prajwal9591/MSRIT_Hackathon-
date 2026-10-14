@@ -122,36 +122,40 @@ export const dependencyAnalyzerService = {
       }
 
       // 5. Detect Service Dependencies (gRPC / HTTP Microservices)
-      if (code.includes('http://') || code.includes('https://') || code.includes('grpc') || code.includes('Worker')) {
-        const serviceNodeId = `svc-order-processing`;
+      if (code.includes('http://') || code.includes('https://') || code.includes('grpc') || code.includes('Worker') || code.includes('fetch(') || code.includes('axios.')) {
+        const currentRepo = repoUploadService.getCurrentRepo();
+        const rName = currentRepo?.metadata?.name || 'app';
+        const serviceNodeId = `svc-${dependencyAnalyzerService.sanitizeId(rName)}-worker`;
         if (!nodesMap.has(serviceNodeId)) {
           nodesMap.set(serviceNodeId, {
             id: serviceNodeId,
-            label: 'order-processing-service',
-            path: 'microservices/order-processing',
+            label: `${rName}-downstream-service`,
+            path: `services/${rName}-worker`,
             type: 'service',
-            category: 'Microservice Gateway',
+            category: 'Microservice / Consumer',
             risk: 'High'
           });
         }
-        dependencyAnalyzerService.addEdge(edgesList, edgeHashSet, sourceId, serviceNodeId, 'gRPC event stream', 'service');
+        dependencyAnalyzerService.addEdge(edgesList, edgeHashSet, sourceId, serviceNodeId, 'dispatches event stream', 'service');
         stats.serviceDepsCount++;
       }
 
-      // 6. Detect Database Dependencies (ORM / SQL Queries / Redis locks)
-      if (code.includes('TransactionLedger') || code.includes('db.') || code.includes('query') || code.includes('acquireLock')) {
-        const dbNodeId = `db-transaction-ledger`;
+      // 6. Detect Database Dependencies (ORM / SQL Queries / Redis locks / Mongoose)
+      if (code.includes('db.') || code.includes('query(') || code.includes('find(') || code.includes('select(') || code.includes('insert(') || code.includes('table(') || code.includes('model(') || code.includes('prisma.') || code.includes('sequelize') || code.includes('mongoose')) {
+        const currentRepo = repoUploadService.getCurrentRepo();
+        const rName = currentRepo?.metadata?.name || 'app';
+        const dbNodeId = `db-${dependencyAnalyzerService.sanitizeId(rName)}-store`;
         if (!nodesMap.has(dbNodeId)) {
           nodesMap.set(dbNodeId, {
             id: dbNodeId,
-            label: 'TransactionLedger (PostgreSQL / Redis)',
-            path: 'database/TransactionLedger',
+            label: `${rName} Data Store (SQL / NoSQL)`,
+            path: `database/${rName}Store`,
             type: 'database',
-            category: 'Database & Lock Provider',
+            category: 'Database & Persistence',
             risk: 'Critical'
           });
         }
-        dependencyAnalyzerService.addEdge(edgesList, edgeHashSet, sourceId, dbNodeId, 'executes SQL / Redis Lock', 'database');
+        dependencyAnalyzerService.addEdge(edgesList, edgeHashSet, sourceId, dbNodeId, 'executes database query', 'database');
         stats.databaseDepsCount++;
       }
     });

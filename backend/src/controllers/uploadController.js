@@ -6,7 +6,7 @@ export const uploadController = {
   // Handle ZIP Archive Upload
   handleZipUpload: (req, res, next) => {
     try {
-      const file = req.file;
+      const file = req.file || (req.files && req.files[0]);
       const { repoName } = req.body;
 
       const result = repoUploadService.processZipUpload(file, repoName);

@@ -2,24 +2,25 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ShieldAlert,
-  AlertTriangle,
-  Zap,
   TrendingUp,
   TrendingDown,
-  Info,
   ChevronRight,
-  CheckCircle,
-  FileText
+  CheckCircle
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Badge } from '../common/Badge';
+import { Tooltip } from '../common/Tooltip';
 
 export const RiskCards = () => {
   const { riskCards } = useApp();
   const [selectedRisk, setSelectedRisk] = useState(null);
 
+  if (!riskCards || riskCards.length === 0) {
+    return null;
+  }
+
   const getBorderColor = (level) => {
-    switch (level.toLowerCase()) {
+    switch (String(level || '').toLowerCase()) {
       case 'critical':
         return 'border-rose-500/40 bg-rose-950/20 hover:border-rose-500/80 glow-rose';
       case 'high':
@@ -42,8 +43,11 @@ export const RiskCards = () => {
           </h3>
           <p className="text-xs text-slate-400">Risk impact factors evaluated for the selected commit diff</p>
         </div>
-        <Badge variant="critical" className="text-xs px-3 py-1">
-          4 Factors Assessed
+        <Badge
+          variant={riskCards.length === 1 && (riskCards[0].id.includes('non-code') || riskCards[0].id.includes('empty')) ? 'success' : 'critical'}
+          className="text-xs px-3 py-1"
+        >
+          {riskCards.length} {riskCards.length === 1 ? 'Factor Assessed' : 'Factors Assessed'}
         </Badge>
       </div>
 
@@ -59,43 +63,69 @@ export const RiskCards = () => {
           >
             {/* Top Bar */}
             <div className="flex items-center justify-between mb-3">
-              <Badge variant={card.level.toLowerCase()} className="uppercase tracking-wider text-[10px]">
-                {card.level} Risk
-              </Badge>
-              <div className="flex items-center gap-1 text-[11px] font-mono text-slate-400">
-                {card.changeTrend.startsWith('+') ? (
-                  <span className="flex items-center text-rose-400">
-                    <TrendingUp className="h-3 w-3 mr-0.5" /> {card.changeTrend}
-                  </span>
-                ) : (
-                  <span className="flex items-center text-emerald-400">
-                    <TrendingDown className="h-3 w-3 mr-0.5" /> {card.changeTrend}
+              <div className="flex items-center gap-1.5">
+                <Badge variant={String(card?.level || 'info').toLowerCase()} className="uppercase tracking-wider text-[10px]">
+                  {card?.level || 'INFO'} Risk
+                </Badge>
+                {card?.weight && (
+                  <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/40">
+                    {Math.round(card.weight * 100)}% Wgt
                   </span>
                 )}
               </div>
+              <Tooltip
+                title="Trend Delta"
+                content={`Risk index shift compared to baseline commit: ${card?.changeTrend || '0%'}`}
+                position="top"
+              >
+                <div className="flex items-center gap-1 text-[11px] font-mono text-slate-400 cursor-help">
+                  {(card?.changeTrend || '').startsWith('+') ? (
+                    <span className="flex items-center text-rose-400">
+                      <TrendingUp className="h-3 w-3 mr-0.5" /> {card?.changeTrend || '+0%'}
+                    </span>
+                  ) : (
+                    <span className="flex items-center text-emerald-400">
+                      <TrendingDown className="h-3 w-3 mr-0.5" /> {card?.changeTrend || '-0%'}
+                    </span>
+                  )}
+                </div>
+              </Tooltip>
             </div>
 
             {/* Score & Title */}
             <div className="flex items-baseline justify-between mb-2">
               <h4 className="text-sm font-bold text-slate-100 truncate pr-2">{card.title}</h4>
-              <span className="text-xl font-extrabold font-mono text-slate-100">{card.score}</span>
+              <Tooltip
+                title={`${card.title} Rating`}
+                content={`Composite score calculated from ${card.affectedFilesCount || 0} affected files and AST dependency depth.`}
+                position="left"
+              >
+                <span className="text-xl font-extrabold font-mono text-slate-100 cursor-help">{card.score}</span>
+              </Tooltip>
             </div>
 
             {/* Score Bar */}
-            <div className="w-full bg-slate-950/80 h-1.5 rounded-full overflow-hidden mb-3 border border-slate-800">
-              <div
-                className={`h-full transition-all duration-500 ${
-                  card.level === 'Critical'
-                    ? 'bg-rose-500'
-                    : card.level === 'High'
-                    ? 'bg-amber-500'
-                    : card.level === 'Medium'
-                    ? 'bg-indigo-500'
-                    : 'bg-emerald-500'
-                }`}
-                style={{ width: `${card.score}%` }}
-              />
-            </div>
+            <Tooltip
+              title="Risk Index Progress"
+              content={`${card.score}% severity threshold reached on 0-100 scale.`}
+              position="top"
+              className="w-full"
+            >
+              <div className="w-full bg-slate-950/80 h-1.5 rounded-full overflow-hidden mb-3 border border-slate-800 cursor-help">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    card.level === 'Critical'
+                      ? 'bg-rose-500'
+                      : card.level === 'High'
+                      ? 'bg-amber-500'
+                      : card.level === 'Medium'
+                      ? 'bg-indigo-500'
+                      : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${card.score}%` }}
+                />
+              </div>
+            </Tooltip>
 
             {/* Summary */}
             <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-4">
@@ -123,8 +153,8 @@ export const RiskCards = () => {
           >
             <div className="flex items-start justify-between">
               <div>
-                <Badge variant={selectedRisk.level.toLowerCase()} className="mb-1 uppercase">
-                  {selectedRisk.level} Risk Impact
+                <Badge variant={String(selectedRisk?.level || 'info').toLowerCase()} className="mb-1 uppercase">
+                  {selectedRisk?.level || 'INFO'} Risk Impact
                 </Badge>
                 <h3 className="text-lg font-bold text-slate-100">{selectedRisk.title}</h3>
               </div>

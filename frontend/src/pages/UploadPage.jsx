@@ -1,20 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FolderUp } from 'lucide-react';
+import { FolderUp, LayoutDashboard, Activity, CheckCircle2 } from 'lucide-react';
 import { UploadComponent } from '../components/upload/UploadComponent';
-import { RepositoryIntelligence } from '../components/upload/RepositoryIntelligence';
 import { useApp } from '../context/AppContext';
 import { Badge } from '../components/common/Badge';
+import { Button } from '../components/common/Button';
 
 export const UploadPage = () => {
   const {
     repositoryMetadata,
-    isMetadataLoading,
-    loadingStep,
-    metadataError,
     selectedRepo,
+    setActiveTab,
     runAnalysis
   } = useApp();
+
+  const activeName = selectedRepo?.name || repositoryMetadata?.repositoryName;
 
   return (
     <motion.div
@@ -29,7 +29,7 @@ export const UploadPage = () => {
             <FolderUp className="h-6 w-6 text-cyan-400" /> Repository Upload & Ingestion
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Ingest local source code or clone remote Git repositories to parse call hierarchy graph
+            Ingest local source code or clone remote Git repositories to parse call hierarchy graphs
           </p>
         </div>
 
@@ -41,18 +41,51 @@ export const UploadPage = () => {
       {/* Main Upload Box */}
       <UploadComponent />
 
-      {/* Dynamic Repository Intelligence Section */}
-      <RepositoryIntelligence
-        metadata={repositoryMetadata}
-        isLoading={isMetadataLoading}
-        loadingStep={loadingStep}
-        error={metadataError}
-        onLaunchScan={() => {
-          if (selectedRepo?.id) {
-            runAnalysis(selectedRepo.id);
-          }
-        }}
-      />
+      {/* Quick Navigation to Ingested Repository Dashboard */}
+      {activeName && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-6 rounded-3xl glass-card border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              <h3 className="text-sm font-bold text-slate-100">
+                Repository <span className="text-cyan-300 font-mono">{activeName}</span> Ingested Successfully
+              </h3>
+            </div>
+            <p className="text-xs text-slate-400">
+              View the unified Repository Dashboard for architecture telemetry, technology stack, dependency graphs, and blast radius risk scores.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <Button
+              variant="secondary"
+              icon={LayoutDashboard}
+              onClick={() => setActiveTab('dashboard')}
+              className="text-xs"
+            >
+              Open Dashboard
+            </Button>
+            <Button
+              variant="primary"
+              icon={Activity}
+              onClick={() => {
+                if (selectedRepo?.id) {
+                  runAnalysis(selectedRepo.id);
+                } else {
+                  setActiveTab('analysis-results');
+                }
+              }}
+              className="text-xs shadow-lg shadow-cyan-500/20"
+            >
+              Launch Scan
+            </Button>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 };

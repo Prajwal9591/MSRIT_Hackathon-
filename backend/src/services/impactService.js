@@ -1,52 +1,69 @@
+import { impactAnalysisEngineService } from './impactAnalysisEngineService.js';
+import { repoUploadService } from './repoUploadService.js';
+
 export const impactService = {
-  getBlastRadiusLayers: (commitHash = '8f92a1b') => {
-    return {
+  /**
+   * Get Blast Radius Layers for a given repository and optional changed file or diff
+   */
+  getBlastRadiusLayers: (
+    commitHash = '8f92a1b',
+    filePath = null,
+    repoId = null,
+    diffText = null,
+    baseSha = null,
+    targetSha = null,
+    changedFiles = null
+  ) => {
+    const currentRepo = repoUploadService.getCurrentRepo();
+    const resolvedRepoId = repoId || currentRepo?.id || currentRepo?.repoId || 'active-repo';
+
+    const result = impactAnalysisEngineService.calculateImpact({
+      changedFile: filePath,
+      repoId: resolvedRepoId,
       commitHash,
-      overallRiskIndex: 'HIGH (78/100)',
-      metrics: {
-        directImpactCount: 3,
-        downstreamServicesCount: 5,
-        publicEndpointsCount: 12,
-        databaseTablesCount: 2
-      },
-      layers: [
-        {
-          level: 0,
-          name: 'Layer 0: Modified Source Files',
-          riskColor: 'rose',
-          items: [
-            { name: 'StripeWebhookHandler.ts', type: 'TypeScript', impact: 'High', detail: 'Signature & Lock handling changed' },
-            { name: 'AuthenticationGuard.ts', type: 'TypeScript', impact: 'Critical', detail: 'Bypass flag parameter added' }
-          ]
-        },
-        {
-          level: 1,
-          name: 'Layer 1: Direct Internal Dependents',
-          riskColor: 'amber',
-          items: [
-            { name: 'PaymentRoutes.ts', type: 'Express Controller', impact: 'High', detail: 'Exposes altered handler parameters' },
-            { name: 'TransactionLedger.ts', type: 'TypeORM Model', impact: 'Medium', detail: 'Modifies SQL update behavior' }
-          ]
-        },
-        {
-          level: 2,
-          name: 'Layer 2: Downstream Microservices',
-          riskColor: 'indigo',
-          items: [
-            { name: 'order-processing-service', type: 'gRPC Service', impact: 'High', detail: 'Relies on payment ledger status confirmation' },
-            { name: 'billing-analytics-worker', type: 'Kafka Consumer', impact: 'Medium', detail: 'Processes payment metadata streams' }
-          ]
-        },
-        {
-          level: 3,
-          name: 'Layer 3: Public APIs & Gateways',
-          riskColor: 'cyan',
-          items: [
-            { name: 'POST /api/v2/webhooks/stripe', type: 'Public Webhook', impact: 'Critical', detail: 'Entry point for external Stripe triggers' },
-            { name: 'GET /api/v2/payments/status/:id', type: 'REST API', impact: 'High', detail: 'Used by Mobile iOS/Android apps' }
-          ]
-        }
-      ]
+      diffText,
+      baseSha,
+      targetSha,
+      changedFiles,
+      algorithm: 'bfs'
+    });
+
+    return {
+      commitHash: result.input?.commitHash || commitHash,
+      repositoryName: result.repositoryName || currentRepo?.name || 'repository',
+      sourceCommit: commitHash,
+      sourceFile: result.sourceFile,
+      sourceFiles: result.sourceFiles || (result.sourceFile ? [result.sourceFile] : []),
+      diff: result.diff || null,
+      diffSummary: result.diffSummary || null,
+      changedSymbols: result.changedSymbols || [],
+      overallRiskIndex: result.overallRiskIndex || 'LOW (0/100)',
+      overallRiskScore: result.overallRiskScore || 0,
+      riskLevel: result.riskLevel || 'LOW',
+      directImpactCount: result.directDependentsCount || 0,
+      indirectImpactCount: result.indirectDependentsCount || 0,
+      totalImpactedCount: result.totalImpactedFiles || 0,
+      downstreamServicesCount: result.indirectDependentsCount || 0,
+      publicEndpointsCount: result.affectedApis?.length || 0,
+      databaseTablesCount: result.affectedDatabaseTables?.length || 0,
+      directDependents: result.directDependents || [],
+      indirectDependents: result.indirectDependents || [],
+      totalImpactedFiles: result.totalImpactedFiles || 0,
+      impactChains: result.impactChains || [],
+      impactTree: result.impactTree,
+      impactedNodes: result.impactedNodes || [],
+      impactedEdges: result.impactedEdges || [],
+      unaffectedFilesCount: result.unaffectedFilesCount || 0,
+      metrics: result.metrics,
+      layers: result.layers || [],
+      concentricLayers: result.concentricLayers || result.layers || [],
+      impactedLayers: result.impactedLayers || [],
+      affectedFiles: result.affectedFiles || [],
+      affectedApis: result.affectedApis || [],
+      affectedServices: result.affectedServices || [],
+      affectedComponents: result.affectedComponents || [],
+      affectedDatabaseTables: result.affectedDatabaseTables || [],
+      affectedTests: result.affectedTests || []
     };
   }
 };

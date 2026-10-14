@@ -4,8 +4,37 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="AegisBlast AI - Next-generation code impact, AST call-graph visualization, and blast radius analysis platform." />
-    <title>AegisBlast AI - Code Impact & Blast Radius Platform</title>
+    <meta name="description" content="Enterprise AI-powered code impact, AST dependency graph, and blast radius risk analyzer with multi-format drag-and-drop code file ingestion." />
+    <title>AegisBlast AI Code Blast Radius Analyzer</title>
+    <script>
+      // Unconditional safeguard against iframe/preview environment readonly fetch setter errors
+      (function() {
+        try {
+          var origFetch = window.fetch || (typeof globalThis !== 'undefined' ? globalThis.fetch : undefined);
+          var currentFetch = origFetch;
+          var installFetchGuard = function(target) {
+            if (!target) return;
+            try {
+              Object.defineProperty(target, 'fetch', {
+                get: function() { return currentFetch; },
+                set: function(val) {
+                  if (typeof val === 'function') {
+                    currentFetch = val;
+                  }
+                },
+                configurable: true,
+                enumerable: true
+              });
+            } catch (err) {}
+          };
+          installFetchGuard(window);
+          if (typeof globalThis !== 'undefined') installFetchGuard(globalThis);
+          if (typeof self !== 'undefined') installFetchGuard(self);
+        } catch (e) {
+          // Ignore sandboxed errors
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

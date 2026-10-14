@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.js';
 import { config } from './config/environment.js';
@@ -41,29 +44,45 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/v1/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Base Route welcome info
-app.get('/', (req, res) => {
-  res.json({
-    service: 'AegisBlast Express API Engine',
-    version: '1.0.0',
-    status: 'running',
-    swaggerDocs: 'http://localhost:5000/api-docs',
-    endpoints: [
-      '/health',
-      '/upload',
-      '/analyze',
-      '/metadata',
-      '/dependency',
-      '/impact',
-      '/explain',
-      '/dashboard'
-    ]
-  });
-});
-
 // API Routes Router
 app.use('/api/v1', routes);
-app.use('/', routes); // Also mount at root for direct /upload, /analyze, etc.
+app.use('/api', routes);
+
+// Serve frontend static files in production
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+
+if (config.nodeEnv === 'production' && fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/api-docs')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+} else {
+  // Base Route welcome info in development
+  app.get('/', (req, res) => {
+    res.json({
+      service: 'AegisBlast Express API Engine',
+      version: '1.0.0',
+      status: 'running',
+      swaggerDocs: '/api-docs',
+      endpoints: [
+        '/health',
+        '/upload',
+        '/analyze',
+        '/metadata',
+        '/dependency',
+        '/impact',
+        '/explain',
+        '/dashboard'
+      ]
+    });
+  });
+  app.use('/', routes);
+}
 
 // 404 Handler
 app.use(notFoundMiddleware);

@@ -12,12 +12,28 @@ export const repoScannerController = {
       const file = req.file;
 
       let result;
+      const uploadedFiles = req.files || (req.file ? [req.file] : null);
 
-      // 1. ZIP File Upload Processing
-      if (file || req.body?.isZip) {
+      // 1. Check for array of uploaded code files / files in JSON or Multer
+      if (req.body?.files && Array.isArray(req.body.files) && req.body.files.length > 0) {
+        result = await repoScannerService.processCodeFiles(req.body.files, repositoryName);
+      }
+      // 2. Multer multi-file upload
+      else if (uploadedFiles && uploadedFiles.length > 0) {
+        const isZip = uploadedFiles.some(
+          (f) => f.originalname?.match(/\.(zip|tar|gz)$/i) || f.mimetype?.includes('zip')
+        );
+        if (isZip && uploadedFiles.length === 1) {
+          result = await repoScannerService.processZipFile(uploadedFiles[0], repositoryName);
+        } else {
+          result = await repoScannerService.processCodeFiles(uploadedFiles, repositoryName);
+        }
+      }
+      // 3. ZIP File Upload Processing
+      else if (file || req.body?.isZip) {
         result = await repoScannerService.processZipFile(file, repositoryName);
       }
-      // 2. GitHub Repository URL Processing
+      // 4. GitHub Repository URL Processing
       else if (githubUrl || repoUrl || cloneUrl) {
         const url = githubUrl || repoUrl || cloneUrl;
         result = await repoScannerService.processGithubUrl(url, branch || 'main', repositoryName);
@@ -27,9 +43,9 @@ export const repoScannerController = {
         const targetPath = folderPath || localPath;
         result = await repoScannerService.processLocalFolder(targetPath, repositoryName);
       }
-      // Default: Scan current workspace if no input provided
+      // No valid input provided
       else {
-        result = await repoScannerService.processLocalFolder('d:\\MSRIT', repositoryName || 'MSRIT-Hackathon');
+        throw ApiError.badRequest('No repository input provided. Please provide a GitHub URL, ZIP archive, or folder path.');
       }
 
       // Return exact required schema directly (and wrapped in ApiResponse)

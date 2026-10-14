@@ -1,0 +1,52 @@
+{
+  "repoId": "test-pipe",
+  "lastScannedAt": "2026-10-01T18:33:14.606Z",
+  "fileHashes": {
+    "src/services/UserService.js": "8908db6895d2af20e79842ad129bab2d",
+    "src/controllers/UserController.js": "dc22e77b7324abfd889dfb6b1480128e"
+  },
+  "fileMetadataMap": {
+    "src/services/UserService.js": {
+      "filePath": "src/services/UserService.js",
+      "isConfig": false,
+      "isDatabase": false,
+      "isController": false,
+      "isService": true,
+      "functions": [],
+      "classes": [
+        {
+          "line": 1,
+          "name": "UserService"
+        }
+      ],
+      "interfaces": [],
+      "imports": [],
+      "exports": [
+        {
+          "line": 1,
+          "statement": "export class UserService { getUser(id) { return id; } }"
+        }
+      ],
+      "routes": []
+    },
+    "src/controllers/UserController.js": {
+      "filePath": "src/controllers/UserController.js",
+      "isConfig": false,
+      "isDatabase": false,
+      "isController": true,
+      "isService": false,
+      "functions": [],
+      "classes": [],
+      "interfaces": [],
+      "imports": [
+        {
+          "line": 1,
+          "source": "../services/UserService.js",
+          "raw": "import { UserService } from \"../services/UserService.js\";"
+        }
+      ],
+      "exports": [],
+      "routes": []
+    }
+  }
+}

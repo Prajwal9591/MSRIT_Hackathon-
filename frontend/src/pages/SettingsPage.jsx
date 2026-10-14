@@ -7,22 +7,22 @@ import {
   Bell,
   Cpu,
   Save,
-  CheckCircle2,
-  Lock,
   Eye,
   EyeOff,
-  Globe,
-  Radio,
-  Sparkles
+  Sun,
+  Moon
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useTheme } from '../context/ThemeContext';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 
 export const SettingsPage = () => {
   const { settings, setSettings, showToast } = useApp();
+  const { theme, setTheme } = useTheme();
   const [showApiKey, setShowApiKey] = useState(false);
   const [formData, setFormData] = useState(settings);
+
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -53,6 +53,55 @@ export const SettingsPage = () => {
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
+        {/* Appearance & Theme Accessibility */}
+        <div className="glass-card rounded-3xl p-6 border border-slate-800 space-y-4">
+          <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
+            <Sun className="h-5 w-5 text-amber-400" />
+            <div>
+              <h3 className="text-base font-bold text-slate-100">Appearance & Theme Accessibility</h3>
+              <p className="text-xs text-slate-400">Toggle between Dark and Light mode with WCAG AA compliant contrast</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { id: 'dark', name: 'Dark Mode (Default)', desc: 'Optimized dark workspace with high contrast text and glassmorphism panels.', icon: Moon },
+              { id: 'light', name: 'Light Mode (High Contrast)', desc: 'Crisp, WCAG AA accessible light interface with slate-900 typography.', icon: Sun }
+            ].map((themeOption) => {
+              const IconComponent = themeOption.icon;
+              return (
+                <label
+                  key={themeOption.id}
+                  onClick={() => {
+                    setTheme(themeOption.id);
+                    showToast(`Switched to ${themeOption.name}`, 'info');
+                  }}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
+                    theme === themeOption.id
+                      ? 'bg-slate-900 border-cyan-500/80 shadow-md shadow-cyan-500/10'
+                      : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-900/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="flex items-center gap-2 text-xs font-bold text-slate-100">
+                      <IconComponent className="h-4 w-4 text-cyan-400" />
+                      {themeOption.name}
+                    </span>
+                    <input
+                      type="radio"
+                      name="appTheme"
+                      checked={theme === themeOption.id}
+                      onChange={() => {}}
+                      className="accent-cyan-500"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">{themeOption.desc}</p>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
         {/* 1. AI Provider Selection */}
         <div className="glass-card rounded-3xl p-6 border border-slate-800 space-y-4">
           <div className="flex items-center gap-3 border-b border-slate-800 pb-3">

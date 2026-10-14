@@ -8,6 +8,8 @@ import impactRoutes from './impactRoutes.js';
 import explainRoutes from './explainRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
 import repoScannerRoutes from './repoScannerRoutes.js';
+import repositoryAnalysisRoutes from './repositoryAnalysisRoutes.js';
+import securityRoutes from './securityRoutes.js';
 
 const router = Router();
 
@@ -21,5 +23,7 @@ router.use('/', impactRoutes);
 router.use('/', explainRoutes);
 router.use('/', dashboardRoutes);
 router.use('/', repoScannerRoutes);
+router.use('/', repositoryAnalysisRoutes);
+router.use('/', securityRoutes);
 
 export default router;
